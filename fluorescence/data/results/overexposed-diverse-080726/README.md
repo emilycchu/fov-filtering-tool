@@ -308,10 +308,10 @@ FN rate: 1/5 (20.0%) -- FP rate: n/a (no spot-negative rows in this subset)
 
 | | Predicted: spot | Predicted: no spot |
 |---|---|---|
-| Truth: spot | TP=42 | FN=2 |
+| Truth: spot | TP=43 | FN=1 |
 | Truth: no spot | FP=5 | TN=27 |
 
-FN rate: 2/44 (4.5%) -- FP rate: 5/32 (15.6%) -- **identical to the baseline FP rate: zero net new false positives**
+FN rate: 1/44 (2.3%) -- FP rate: 5/32 (15.6%) -- **identical to the baseline FP rate: zero net new false positives**
 
 **background** (n=28)
 
