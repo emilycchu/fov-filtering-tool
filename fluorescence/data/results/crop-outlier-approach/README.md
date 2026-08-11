@@ -1,4 +1,4 @@
-# Crop-outlier approach to filtering fluorescent-spot false positives (2026-08-10)
+# Crop-outlier approach to filtering fluorescent-spot false positives (2026-08-10, extended 2026-08-10)
 
 An exploration of a completely different, cheaper signal than `src/overexposure.py`'s
 pixel-level blue-channel/contrast-ratio detector: does a genuine overexposure-halo artifact
@@ -7,7 +7,22 @@ halo spuriously inflates crop counts -- a targeted side effect worth filtering o
 way it inflates `contrast_ratio`. This uses data already computed and sitting in GCS; no image
 is ever read.
 
-## Method
+Two versions of this analysis are run, same style, same 76-row label set, same whole-slide
+leave-one-out median/MAD approach -- differing only in which precomputed GCS count is treated
+as the outlier signal:
+
+1. **Crop-count metric** (`n_spots_detected`) -- raw candidate fluorescent-spot crops before ML
+   filtering.
+2. **Parasite-count metric** (`n_positives`) -- crops the ML classifier actually confirmed as a
+   parasite.
+
+The comparison at the end is the actual point of running both: does the halo's apparent
+inflation of raw candidate crops (metric 1) survive into confirmed-parasite counts (metric 2),
+or does the classifier already filter it out?
+
+## Metric 1: crop-count (`n_spots_detected`)
+
+### Method
 
 **Ground truth and dataset.** The existing 76-row diverse label set,
 `data/labels/overexposure-diverse-080726.csv` (44 `spot_truth=yes`, 32 `spot_truth=no`, spanning
@@ -58,10 +73,11 @@ mean-vs-median divergence is itself visible as the `mean_median_divergence` flag
 baseline_median) / baseline_mad`.
 
 **Code:** `scripts/crop-outlier-approach/crop_counts.py` (GCS resolution + per-sample cache +
-baseline stats), `scripts/crop-outlier-approach/analyze_crop_outliers.py` (main pipeline,
-produces `results.csv`), `scripts/crop-outlier-approach/report_tables.py` (the tables below).
+baseline stats), `scripts/crop-outlier-approach/analyze_crop_outliers.py` (main pipeline; run as
+`python scripts/crop-outlier-approach/analyze_crop_outliers.py` for this metric, producing
+`results.csv`), `scripts/crop-outlier-approach/report_tables.py` (the tables below).
 
-## Results: positive vs. negative ground truth
+### Results: positive vs. negative ground truth
 
 **Positive summary** (n=44, 3 excluded -- see "Missing data" below)
 
@@ -174,7 +190,7 @@ subsets) drop below `robust_zscore=11` here.
 | PAT-103-2 | 441 | background | 577 | 1326 | 1119.363 | 0.435 | -0.669 |  |
 | PAT-112-2 | 124 | background | 147 | 121.0 | 34.1 | 1.215 | 0.762 |  |
 
-## Discussion: does the signal separate ground truth?
+### Discussion: does the crop-count signal separate ground truth?
 
 **Yes, cleanly at the group-median level, but no single threshold perfectly separates the two
 groups.** The medians are ~23x apart (52.59 vs. 2.25 `robust_zscore`; 19.80x vs. 1.77x ratio),
@@ -207,7 +223,7 @@ overexposure halo. Worth a manual look at the raw image before trusting this row
 label at face value -- it's exactly the kind of case this whole-slide-median approach is
 designed to surface for human review, not resolve unilaterally.
 
-## Flagged rows
+### Flagged rows (crop-count metric)
 
 Every row with any of the flags below is listed explicitly, per Emily's request not to bury
 unusual cases in prose. `results.csv`'s `flags` column is semicolon-joined; a row can carry
@@ -233,6 +249,204 @@ multiple flags.
   `robust_zscore >= 2` (or `<= -2`). See "Discussion" above for why this threshold alone doesn't
   cleanly separate ground truth.
 
+## Metric 2: parasite-count (`n_positives`)
+
+### Method
+
+Identical to Metric 1 in every respect (same 76-row label set, same whole-slide leave-one-out
+median/MAD baseline, same flag definitions) except the per-FOV count itself: `n_positives`, the
+count of crops the ML classifier actually confirmed as a parasite, from the same
+`fov_summary.csv` (Liberia/Tanzania) or by summing the `positive` column of `spots.csv` grouped
+by `fov_id` (Uganda) -- see `crop_counts.py`'s module docstring. `ratio_to_median =
+target_n_positives / baseline_median`, `robust_zscore = (target_n_positives - baseline_median) /
+baseline_mad`.
+
+Run as `python scripts/crop-outlier-approach/analyze_crop_outliers.py --metric n_positives`,
+producing `results_parasites.csv`.
+
+### Results: positive vs. negative ground truth
+
+**A degenerate baseline dominates this metric.** True parasitemia in this dataset is very low
+(`processing_summary.csv` reports ~0.001% parasitemia on the slides checked) -- most FOVs on
+most slides have **zero** confirmed parasites. That means a slide's leave-one-out median
+`n_positives` is usually 0, and its MAD is usually 0 too, which makes `ratio_to_median` and
+`robust_zscore` mathematically undefined (`zero_or_undefined_baseline`) for the great majority
+of rows -- **61 of 76 (80.3%)**, vs. 0 of 76 for the crop-count metric. Only 12 rows have a
+computable baseline at all (2 positive, 10 negative); every other row is excluded from the
+summary stats below, not just the 3 `no_data` rows.
+
+**Positive summary** (n=44, 42 excluded: 3 `no_data`, 39 `zero_or_undefined_baseline`)
+
+- median `robust_zscore` **-0.86** (mean -0.86, range -1.72-0.00), n=2
+- median `ratio_to_median` **0.83** (mean 0.83, range 0.65-1.00)
+- 0/2 (0.0%) at or above 2 MAD above baseline
+
+**Negative summary** (n=32, 22 excluded: 0 `no_data`, 22 `zero_or_undefined_baseline`)
+
+- median `robust_zscore` **0.23** (mean -0.03, range -1.52-1.05), n=10
+- median `ratio_to_median` **1.17** (mean 0.97, range 0.00-2.00)
+- 0/10 (0.0%) at or above 2 MAD above baseline
+
+**Full positive-group table:**
+
+| sample_id | fov_id | notes | target_n_positives | baseline_median | baseline_mad | ratio_to_median | robust_zscore | flags |
+|---|---|---|---|---|---|---|---|---|
+| LB-D10-2025-12-29-150312-0171084-VFPCHC-2-4 | 153 |  | 0 | 0 | 0.0 |  |  | same_slide_contamination;zero_or_undefined_baseline |
+| LB-D10-2025-12-29-150312-0171084-VFPCHC-2-4 | 154 |  | 0 | 0 | 0.0 |  |  | same_slide_contamination;zero_or_undefined_baseline |
+| LB-D10-2025-12-30-083614-0250901VFPCHC-2-1 | 210 |  | 2 | 0 | 0.0 |  |  | same_slide_contamination;zero_or_undefined_baseline |
+| LB-D10-2025-12-30-083614-0250901VFPCHC-2-1 | 227 |  | 9 | 0 | 0.0 |  |  | same_slide_contamination;zero_or_undefined_baseline |
+| LB-D10-2025-12-30-084453-0250071VFPCHC-2-2 | 200 |  | 6 | 0 | 0.0 |  |  | zero_or_undefined_baseline |
+| LB-D11-2025-12-19-111309-0211715-VFPCHC-3-1 | 277 | background | 0 | 0 | 0.0 |  |  | zero_or_undefined_baseline |
+| LB-D11-2025-12-19-131014-0241591-VFPCHC-3-2 | 278 | background | 1 | 0 | 0.0 |  |  | zero_or_undefined_baseline |
+| LB-D3-2025-09-02-141940-25087110-D-Only-1-2 | 42 | background | 0 | 0 | 0.0 |  |  | zero_or_undefined_baseline |
+| LB-D3-2025-09-09-093425-250917463-D-Only-1-1 | 166 |  | 0 | 0 | 0.0 |  |  | zero_or_undefined_baseline |
+| LB-D3-2025-09-27-121918-17217958-D-thin-4-4 | 262 |  | 0 | 0 | 0.0 |  |  | zero_or_undefined_baseline |
+| LB-D3-2025-10-03-104211-250917371-D-thin-2-3 | 4 |  | 1 | 0 | 0.0 |  |  | zero_or_undefined_baseline |
+| LB-D3-2025-10-03-104643-250917465-D-thin-3-4 | 185 | green | 9 | 0 | 0.0 |  |  | zero_or_undefined_baseline |
+| LB-D3-2025-10-03-124025-2404175445D-thin-2-3 | 114 |  | 0 | 0 | 0.0 |  |  | same_slide_contamination;zero_or_undefined_baseline |
+| LB-D3-2025-10-03-124025-2404175445D-thin-2-3 | 125 |  | 1 | 0 | 0.0 |  |  | same_slide_contamination;zero_or_undefined_baseline |
+| LB-D3-2025-10-03-125352-2402169466D-thin-2-1 | 3 | diffuse | 0 | 0 | 0.0 |  |  | zero_or_undefined_baseline |
+| LB-D3-2025-10-03-130859-250916865-D-thin-1-4 | 236 |  | 1 | 0 | 0.0 |  |  | zero_or_undefined_baseline |
+| LB-D3-2025-10-22-131729-250917745-D-thin-2-3 | 134 | double | 0 | 0 | 0.0 |  |  | zero_or_undefined_baseline |
+| LB-D3-2025-10-22-132316-2411189646-D-thin-1-4 | 135 | diffuse | 1 | 0 | 0.0 |  |  | zero_or_undefined_baseline |
+| LB-D3-2025-10-22-140622-250917738-D-thin-1-1 | 122 | double | 0 | 0 | 0.0 |  |  | same_slide_contamination;zero_or_undefined_baseline |
+| LB-D3-2025-10-22-140622-250917738-D-thin-1-1 | 238 |  | 0 | 0 | 0.0 |  |  | same_slide_contamination;zero_or_undefined_baseline |
+| LB-D3-2025-10-24-132012-25046898-D-thin-1-4 | 3 | diffuse | 2 | 0 | 0.0 |  |  | same_slide_contamination;zero_or_undefined_baseline |
+| LB-D3-2025-10-24-132012-25046898-D-thin-1-4 | 305 |  | 9 | 0 | 0.0 |  |  | same_slide_contamination;zero_or_undefined_baseline |
+| LB-D3-2025-10-24-162727-230918080-D-thin-1-4 | 8 | diffuse | 0 | 0 | 0.0 |  |  | zero_or_undefined_baseline |
+| LB-D3-2025-10-25-105806-180951467-D-thin-1-1 | 270 |  | 0 | 0 | 0.0 |  |  | zero_or_undefined_baseline |
+| LB-D3-2025-10-25-150947-250917467-D-thin-3-2 | 235 |  | 1 | 0 | 0.0 |  |  | zero_or_undefined_baseline |
+| LB-D3-2025-10-27-123159-251123404-D-thin-4-1 | 48 |  | 0 | 0 | 0.0 |  |  | same_slide_contamination;zero_or_undefined_baseline |
+| LB-D3-2025-10-27-123159-251123404-D-thin-4-1 | 49 |  | 0 | 0 | 0.0 |  |  | same_slide_contamination;zero_or_undefined_baseline |
+| LB-D3-2025-10-27-124239-250916732-D-thin-1-3 | 301 |  | 1 | 1 | 1.483 | 1.0 | 0.0 | mean_median_divergence |
+| LB-D3-2025-10-27-134711-250917368-D-thin-1-3 | 52 |  | 0 | 0 | 0.0 |  |  | zero_or_undefined_baseline |
+| LB-D3-2025-10-27-154305-250917412-D-thin-1-4 | 119 | diffuse | 0 | 0 | 0.0 |  |  | zero_or_undefined_baseline |
+| LB-D3-2025-10-27-173317-250917493-D-thin-2-4 | 82 |  | 4 | 0 | 0.0 |  |  | zero_or_undefined_baseline |
+| KIT-62500763 | 200 | green | -- | -- | -- | -- | -- | **no_data** |
+| KIT-62501035 | 67 |  | 0 | 0 | 0.0 |  |  | zero_or_undefined_baseline |
+| KIT-62501081 | 141 | double | 1 | 0 | 0.0 |  |  | zero_or_undefined_baseline |
+| KIT-62501087 | 271 |  | 0 | 0 | 0.0 |  |  | zero_or_undefined_baseline |
+| KTR-72502946 | 54 |  | -- | -- | -- | -- | -- | **no_data** |
+| KTR-72502946 | 198 |  | -- | -- | -- | -- | -- | **no_data** |
+| NKR-72502319 | 293 |  | 0 | 0 | 0.0 |  |  | same_slide_contamination;zero_or_undefined_baseline |
+| NKR-72502319 | 311 |  | 1 | 0 | 0.0 |  |  | same_slide_contamination;zero_or_undefined_baseline |
+| RUB-62501332 | 133 |  | 4 | 0 | 0.0 |  |  | zero_or_undefined_baseline |
+| RUB-62501389 | 284 | double | 0 | 0 | 0.0 |  |  | zero_or_undefined_baseline |
+| RUB-72501756 | 315 |  | 0 | 0 | 0.0 |  |  | zero_or_undefined_baseline |
+| PAT-070-3 | 34 | double | 43 | 66 | 13.343 | 0.652 | -1.724 |  |
+| PBC-608-KH-1 | 171 |  | 0 | 0.0 | 0.0 |  |  | zero_or_undefined_baseline |
+
+**Full negative-group table:**
+
+| sample_id | fov_id | notes | target_n_positives | baseline_median | baseline_mad | ratio_to_median | robust_zscore | flags |
+|---|---|---|---|---|---|---|---|---|
+| LB-D11-2025-12-17-115859-0250319D-thin-4-1 | 29 | background | 0 | 0 | 0.0 |  |  | zero_or_undefined_baseline |
+| LB-D11-2025-12-19-134126-025073-VFPCHC-3-1 | 1 | background | 0 | 0 | 0.0 |  |  | zero_or_undefined_baseline |
+| LB-D3-2025-08-30-103102-250876706-D-thin-4 | 257 | background | 0 | 0 | 0.0 |  |  | same_slide_contamination;zero_or_undefined_baseline |
+| LB-D3-2025-08-30-103102-250876706-D-thin-4 | 269 | background | 0 | 0 | 0.0 |  |  | same_slide_contamination;zero_or_undefined_baseline |
+| LB-D3-2025-08-30-103102-250876706-D-thin-4 | 274 | background | 0 | 0 | 0.0 |  |  | same_slide_contamination;zero_or_undefined_baseline |
+| LB-D3-2025-08-30-103102-250876706-D-thin-4 | 279 | background | 0 | 0 | 0.0 |  |  | same_slide_contamination;zero_or_undefined_baseline |
+| LB-D3-2025-08-30-103102-250876706-D-thin-4 | 289 | background | 0 | 0 | 0.0 |  |  | same_slide_contamination;zero_or_undefined_baseline |
+| LB-D3-2025-10-03-124025-2404175445D-thin-2-3 | 1 | background | 0 | 0 | 0.0 |  |  | same_slide_contamination;zero_or_undefined_baseline |
+| LB-D3-2025-10-03-124025-2404175445D-thin-2-3 | 16 | background | 0 | 0 | 0.0 |  |  | same_slide_contamination;zero_or_undefined_baseline |
+| LB-D3-2025-10-03-124025-2404175445D-thin-2-3 | 17 | background | 1 | 0 | 0.0 |  |  | same_slide_contamination;zero_or_undefined_baseline |
+| LB-D3-2025-10-03-124025-2404175445D-thin-2-3 | 18 | background | 0 | 0 | 0.0 |  |  | same_slide_contamination;zero_or_undefined_baseline |
+| LB-D3-2025-10-03-124025-2404175445D-thin-2-3 | 19 | background | 0 | 0 | 0.0 |  |  | same_slide_contamination;zero_or_undefined_baseline |
+| LB-D3-2025-10-03-124025-2404175445D-thin-2-3 | 53 | background | 0 | 0 | 0.0 |  |  | same_slide_contamination;zero_or_undefined_baseline |
+| LB-D3-2025-10-03-124025-2404175445D-thin-2-3 | 126 | artifact | 0 | 0 | 0.0 |  |  | same_slide_contamination;zero_or_undefined_baseline |
+| LB-D3-2025-10-24-113736-250918214-D-thin-2-3 | 96 | relabeled by Emily 2026-08-07 (was yes) | 3 | 0 | 0.0 |  |  | zero_or_undefined_baseline |
+| LB-D3-2025-10-27-144635-250918691-D-thin-2-2 | 57 | artifact | 1 | 0 | 0.0 |  |  | same_slide_contamination;zero_or_undefined_baseline |
+| LB-D3-2025-10-27-144635-250918691-D-thin-2-2 | 243 | background | 0 | 0 | 0.0 |  |  | same_slide_contamination;zero_or_undefined_baseline |
+| LB-D3-2025-10-27-145205-250917002-D-thin-3-3 | 310 | artifact | 2 | 1 | 1.483 | 2.0 | 0.674 | mean_median_divergence |
+| LB-D3-2025-10-27-155920-250713919-D-thin-3-3 | 169 | background | 2 | 0 | 0.0 |  |  | zero_or_undefined_baseline |
+| LB-D5-2026-01-27-112616-0240052-VFPCHC-2-2 | 40 | background | 0 | 3 | 2.965 | 0.0 | -1.012 |  |
+| KIT-62501062 | 83 | artifact | 0 | 0 | 0.0 |  |  | zero_or_undefined_baseline |
+| NKR-72502319 | 119 | background | 0 | 0 | 0.0 |  |  | same_slide_contamination;zero_or_undefined_baseline |
+| RUB-62501518 | 315 | background | 0 | 0 | 0.0 |  |  | zero_or_undefined_baseline |
+| RUB-62501529 | 87 | background | 7 | 16 | 5.93 | 0.438 | -1.518 |  |
+| PAT-072-1 | 14 | artifact | 8 | 6 | 4.448 | 1.333 | 0.45 | same_slide_contamination |
+| PAT-072-1 | 94 | artifact | 4 | 6 | 4.448 | 0.667 | -0.45 | same_slide_contamination |
+| PAT-154-1 | 478 | background | 1 | 0.0 | 0.0 |  |  | zero_or_undefined_baseline |
+| PBC-225_AM-1 | 30 | background | 90 | 65.0 | 23.722 | 1.385 | 1.054 |  |
+| PBC-800-1 | 128 | background | 0 | 1.0 | 1.483 | 0.0 | -0.674 | same_slide_contamination |
+| PBC-800-1 | 732 | background | 1 | 1.0 | 1.483 | 1.0 | 0.0 | same_slide_contamination |
+| PAT-103-2 | 441 | background | 61 | 45 | 34.1 | 1.356 | 0.469 |  |
+| PAT-112-2 | 124 | background | 3 | 2.0 | 1.483 | 1.5 | 0.674 |  |
+
+### Discussion: does the parasite-count signal separate ground truth?
+
+**No.** Of the 12 rows where a baseline is even computable, z-scores range from -1.72 to +1.05
+for both groups combined -- noise-level, no outliers in either direction, and no separation
+between `spot_truth=yes` and `spot_truth=no`. `PAT-070-3` (positive, `double`) is the only
+positive with a usable baseline that carries any real parasite burden (43 confirmed parasites),
+and it sits *below* its slide's median (`robust_zscore=-1.72`), not above it.
+
+This isn't just "no signal" -- it's a genuine structural mismatch between this whole-slide
+median/MAD approach and this metric. The approach assumes a slide has enough non-degenerate
+variation in the target count to define a meaningful "typical" FOV; `n_positives` violates that
+assumption on 80% of rows because the typical FOV, on the vast majority of slides in this
+dataset, has zero confirmed parasites. Where a slide's population is dense enough to
+support a real median (the 12 usable rows, mostly higher-parasitemia Uganda samples like
+`PAT-070-3`, `PAT-103-2`, `PBC-225_AM-1`), the metric simply doesn't distinguish the two ground-
+truth groups at all.
+
+### Flagged rows (parasite-count metric)
+
+- **`no_data`** (3 rows) -- same two samples as the crop-count metric (`KIT-62500763`,
+  `KTR-72502946`), since this is the same underlying sample-level gap in `detection_results/`.
+- **`zero_or_undefined_baseline`** (61 rows, 80.3% of the dataset) -- see "Discussion" above.
+  This is the dominant flag for this metric, a sharp contrast with the crop-count metric where
+  it fired on zero rows.
+- **`same_slide_contamination`** (33 rows) -- identical set of rows to the crop-count metric
+  (contamination is about which *other* labeled rows share a slide, not about the metric being
+  measured).
+- **`mean_median_divergence`** (2 rows: `LB-D3-2025-10-27-124239-...` fov 301,
+  `LB-D3-2025-10-27-145205-...` fov 310) -- both are among the 12 rows with a computable
+  baseline; both have `baseline_median=1`, where even a 1-count difference between mean and
+  median exceeds the 25%-of-median threshold. A reminder that this flag's threshold, tuned with
+  the crop-count metric's much larger typical values in mind, behaves differently at
+  parasite-count's much smaller scale.
+- **`high_outlier` / `low_outlier`** -- did not fire on any row for this metric.
+
+## Comparing the two metrics
+
+**The crop-count metric shows a strong, if imperfect, separation; the parasite-count metric
+shows essentially none.** Side by side:
+
+| | Crop-count (`n_spots_detected`) | Parasite-count (`n_positives`) |
+|---|---|---|
+| Rows with a computable baseline | 76/76 (100%) | 12/76 (15.8%) |
+| `zero_or_undefined_baseline` rate | 0/76 (0%) | 61/76 (80.3%) |
+| Positive median `robust_zscore` | 52.59 | -0.86 (n=2) |
+| Negative median `robust_zscore` | 2.25 | 0.23 (n=10) |
+| Positives at or above `robust_zscore >= 2` | 41/41 (100%) | 0/2 (0%) |
+| Negatives at or above `robust_zscore >= 2` | 17/32 (53.1%) | 0/10 (0%) |
+
+**This is consistent with a specific, mechanistic story, not a coincidence.** The overexposure
+halo lives in the same blue-channel intensity map that the raw candidate-spot detector
+thresholds for local maxima -- a bright halo plausibly creates many spurious local maxima,
+inflating `n_spots_detected` directly. But `n_positives` is what's *left after* the ML
+classifier scores each candidate crop and rejects the ones that don't look like a real parasite.
+If the classifier is doing its job, most halo-caused candidates should be rejected before they
+ever become a confirmed positive -- which is exactly what the data shows: every positive FOV's
+raw crop count is inflated (metric 1), but essentially none of that inflation survives into
+confirmed parasite counts (metric 2, where the signal disappears into noise).
+
+**A second, independent reason `n_positives` can't work here regardless of the above:** true
+parasitemia in this dataset is low enough that most FOVs have zero confirmed parasites, so a
+whole-slide median/MAD baseline is mathematically undefined for 80% of rows before the halo
+question even comes into play. Median/MAD (chosen specifically for contamination-resistance,
+see Metric 1's Method) needs enough non-zero spread in the population to define a "typical"
+value at all -- a requirement `n_spots_detected` easily satisfies (dozens to thousands of crops
+per FOV) and `n_positives` mostly doesn't (0-2 confirmed parasites on most FOVs).
+
+**Practical takeaway:** if a crop-count-based outlier check were ever built into a real
+pre-filter, it should operate on raw candidate counts (`n_spots_detected`) upstream of the
+classifier, not on the classifier's own output (`n_positives`) -- the whole point of catching
+the halo's effect on crop counts is to catch it *before* it reaches (and burdens) the
+classifier, and this data suggests the classifier is already absorbing most of that burden on
+its own by the time `n_positives` is computed.
+
 ## Caveats
 
 - **Small, hand-picked label set.** 76 rows is not enough to fit or validate a hard decision
@@ -248,14 +462,23 @@ multiple flags.
   excluded from every statistic above, not imputed or approximated.
 - **`v8_hardneg_single_t0.995` was used for every Liberia/Tanzania row**, chosen because
   `n_spots_detected` was verified identical across all available model-version run folders for
-  the slides checked (the upstream spot-finding step is shared across models) -- not
-  re-verified for every single slide in this label set.
+  the slides checked (the upstream spot-finding step is shared across models). `n_positives`
+  legitimately does depend on which classifier produced it (unlike `n_spots_detected`), so this
+  choice matters more for Metric 2 -- not re-verified against other model versions for this
+  label set.
+- **Metric 2's finding is a null result on a small, degenerate sample (12 rows with a
+  computable baseline).** "No separation" here is a real, reproducible finding given the data
+  available, but it's not the same strength of evidence as Metric 1's 76/76-row result --
+  treat it as directional, not a settled conclusion about the classifier's robustness in
+  general.
 
 ## Files
 
-- `results.csv` -- full per-row output (target/baseline stats, flags, `no_data_reason`)
+- `results.csv` -- Metric 1 (`n_spots_detected`) full per-row output
+- `results_parasites.csv` -- Metric 2 (`n_positives`) full per-row output
 - `../../scripts/crop-outlier-approach/crop_counts.py` -- GCS resolution + per-sample cache +
-  baseline stats
-- `../../scripts/crop-outlier-approach/analyze_crop_outliers.py` -- pipeline that produced
-  `results.csv`
-- `../../scripts/crop-outlier-approach/report_tables.py` -- generates the tables in this doc
+  baseline stats for both metrics
+- `../../scripts/crop-outlier-approach/analyze_crop_outliers.py` -- pipeline that produced both
+  CSVs (`--metric n_spots_detected` default, or `--metric n_positives`)
+- `../../scripts/crop-outlier-approach/report_tables.py` -- generates the tables in this doc for
+  either metric's CSV (target-count column is auto-detected from the header)

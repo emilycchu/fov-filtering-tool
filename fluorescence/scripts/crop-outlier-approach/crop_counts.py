@@ -1,6 +1,18 @@
-"""Resolve (sample_id, fov_id, country) to a detected-crop count (`n_spots_detected`) and to a
+"""Resolve (sample_id, fov_id, country) to a per-FOV count for either of two metrics, and to a
 whole-slide leave-one-out baseline, reading only precomputed detection output already sitting
 in GCS -- never an image.
+
+**Two metrics, chosen by the `metric` argument:**
+- `"n_spots_detected"` (default) -- the raw count of candidate fluorescent-spot crops *before*
+  ML filtering. Chosen over `n_rbcs` because it's mechanistically the metric a bright
+  overexposure halo would inflate: these crops come from thresholding local maxima in the same
+  blue-channel intensity map the halo lives in.
+- `"n_positives"` -- the count of crops the ML classifier actually confirmed as a parasite, per
+  FOV. Added to test a different hypothesis: does the halo artifact inflate *confirmed
+  parasites*, not just raw candidate crops? (If the classifier correctly rejects halo-caused
+  candidates, this should show a much weaker -- or no -- separation between ground-truth
+  groups than `n_spots_detected` does; see `data/results/crop-outlier-approach/README.md`'s
+  comparison section for the actual result.)
 
 This deliberately reads the `detection_results/` prefix that `src/gcs_fov.py` and
 `src/gcs_fov_multi.py` avoid on purpose (they resolve *raw* images, upstream of any model). That
@@ -9,10 +21,7 @@ buckets directly (`gcloud storage ls`/`cat`), not by reading any existing code:
 
 - Liberia (`gs://liberia-2025`) and Tanzania (`gs://tanzania_02032026`) both have
   `detection_results/<...>/<model_version>/<slide_folder>/fov_summary.csv`, one row per
-  `fov_id`, with a `n_spots_detected` column -- the raw count of candidate fluorescent-spot
-  crops before ML filtering (chosen over `n_rbcs` because it's mechanistically the metric a
-  bright overexposure halo would inflate: these crops come from thresholding local maxima in
-  the same blue-channel intensity map the halo lives in).
+  `fov_id`, with both an `n_spots_detected` and an `n_positives` column.
     * Liberia's slide folder is the same `_Blue` folder `src.gcs_fov.find_slide_blue_folder`
       already resolves, with the `_Blue` suffix stripped, under
       `detection_results/LB25-<batch>/<model_version>/`.
@@ -23,16 +32,18 @@ buckets directly (`gcloud storage ls`/`cat`), not by reading any existing code:
       LB25-D10's sparse-gap pattern against `gcs_fov.py`'s stride-18/ColumnCount=13 special
       case) -- safe to join directly, no row/col decoding needed.
     * Verified `n_spots_detected` is identical across every model-version run folder for a
-      slide (the upstream spot-finding step is shared; only the classifier differs) -- this
-      standardizes on one folder, `MODEL_VERSION`, per country.
+      slide (the upstream spot-finding step is shared); `n_positives` legitimately *does*
+      depend on which classifier produced it, since that's the thing that differs between
+      model versions -- this standardizes on one folder, `MODEL_VERSION`, per country, for
+      both metrics.
     * Some labeled samples have no `detection_results` under any model version at all (e.g.
       `KTR-72502946`, confirmed to exist as a raw sample but never processed) --
-      `load_slide_crop_counts` returns `None` for these rather than raising.
+      `load_slide_metric_counts` returns `None` for these rather than raising.
 - Uganda (`gs://malaria-annotation-web`) has no per-FOV summary file, but
   `samples/<sample_id>/spots.csv` has the identical per-spot schema
   (`sample_id,fov_id,x,y,log_radius,score,positive`) as Liberia/Tanzania's own `spots.csv` --
-  grouping by `fov_id` and counting rows reproduces `n_spots_detected` per FOV without
-  touching any image.
+  grouping by `fov_id` and counting rows reproduces `n_spots_detected` per FOV, and summing the
+  `positive` column per `fov_id` reproduces `n_positives`, without touching any image.
 """
 import csv
 import io
@@ -51,6 +62,8 @@ LB_BUCKET = "liberia-2025"
 LB_MODEL_VERSION = "v8_hardneg_single_t0.995"
 TZ_MODEL_VERSION = "v8_hardneg_single_t0.995"
 
+METRICS = ("n_spots_detected", "n_positives")
+
 MAD_SCALE = 1.4826  # scales MAD to be a normal-consistent estimator of standard deviation
 
 _COUNTRY_ALIASES = {
@@ -60,7 +73,7 @@ _COUNTRY_ALIASES = {
 }
 
 _client_local = threading.local()
-_slide_cache = {}  # (country, sample_id) -> dict[fov_id, n_spots_detected] | None
+_slide_cache = {}  # (country, sample_id, metric) -> dict[fov_id, count] | None
 
 
 def _client():
@@ -86,17 +99,25 @@ def _try_download_text(bucket, blob_name):
         return None
 
 
-def _parse_fov_summary_csv(text):
+def _parse_fov_summary_csv(text, metric):
     reader = csv.DictReader(io.StringIO(text))
-    return {int(row["fov_id"]): int(row["n_spots_detected"]) for row in reader}
+    return {int(row["fov_id"]): int(row[metric]) for row in reader}
 
 
-def _parse_spots_csv_counts(text):
-    """Count rows per fov_id in a spots.csv (sample_id,fov_id,x,y,log_radius,score,positive) --
-    reproduces the same n_spots_detected a fov_summary.csv column would report.
+def _parse_spots_csv_counts(text, metric):
+    """Aggregate a spots.csv (sample_id,fov_id,x,y,log_radius,score,positive) per fov_id --
+    row count reproduces n_spots_detected, sum of the `positive` column reproduces n_positives.
     """
     reader = csv.DictReader(io.StringIO(text))
-    counts = Counter(int(row["fov_id"]) for row in reader)
+    counts = Counter()
+    if metric == "n_spots_detected":
+        for row in reader:
+            counts[int(row["fov_id"])] += 1
+    elif metric == "n_positives":
+        for row in reader:
+            counts[int(row["fov_id"])] += int(row["positive"])
+    else:
+        raise ValueError(f"Unknown metric: {metric!r}")
     return dict(counts)
 
 
@@ -117,28 +138,31 @@ def _ug_spots_blob_name(sample_id):
     return f"samples/{sample_id}/spots.csv"
 
 
-def load_slide_crop_counts(sample_id, country):
-    """Return {fov_id: n_spots_detected} for every FOV on this slide with detection results, or
-    None if this sample has no detection results at all. Cached per (country, sample_id) since
+def load_slide_metric_counts(sample_id, country, metric="n_spots_detected"):
+    """Return {fov_id: count} for every FOV on this slide with detection results, for either
+    `metric` ("n_spots_detected" or "n_positives" -- see module docstring), or None if this
+    sample has no detection results at all. Cached per (country, sample_id, metric) since
     several labeled rows in the diverse test set share a slide.
     """
+    if metric not in METRICS:
+        raise ValueError(f"Unknown metric: {metric!r}, expected one of {METRICS}")
     key_country = _COUNTRY_ALIASES.get(country.strip().lower())
     if key_country is None:
         raise ValueError(f"Unknown country: {country!r}")
 
-    cache_key = (key_country, sample_id)
+    cache_key = (key_country, sample_id, metric)
     if cache_key in _slide_cache:
         return _slide_cache[cache_key]
 
     if key_country == "lb":
         text = _try_download_text(LB_BUCKET, _lb_fov_summary_blob_name(sample_id))
-        counts = _parse_fov_summary_csv(text) if text is not None else None
+        counts = _parse_fov_summary_csv(text, metric) if text is not None else None
     elif key_country == "tz":
         text = _try_download_text(TZ_BUCKET, _tz_fov_summary_blob_name(sample_id))
-        counts = _parse_fov_summary_csv(text) if text is not None else None
+        counts = _parse_fov_summary_csv(text, metric) if text is not None else None
     elif key_country == "ug":
         text = _try_download_text(UG_BUCKET, _ug_spots_blob_name(sample_id))
-        counts = _parse_spots_csv_counts(text) if text is not None else None
+        counts = _parse_spots_csv_counts(text, metric) if text is not None else None
     else:
         raise AssertionError(key_country)  # unreachable, all _COUNTRY_ALIASES values handled above
 
