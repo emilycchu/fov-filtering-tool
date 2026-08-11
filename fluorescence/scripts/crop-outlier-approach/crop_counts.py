@@ -1,6 +1,6 @@
 """Resolve (sample_id, fov_id, country) to a per-FOV count for either of two metrics, and to a
-whole-slide leave-one-out baseline, reading only precomputed detection output already sitting
-in GCS -- never an image.
+whole-slide baseline (computed over every FOV on the slide, including the target), reading only
+precomputed detection output already sitting in GCS -- never an image.
 
 **Two metrics, chosen by the `metric` argument:**
 - `"n_spots_detected"` (default) -- the raw count of candidate fluorescent-spot crops *before*
@@ -36,14 +36,24 @@ buckets directly (`gcloud storage ls`/`cat`), not by reading any existing code:
       depend on which classifier produced it, since that's the thing that differs between
       model versions -- this standardizes on one folder, `MODEL_VERSION`, per country, for
       both metrics.
-    * Some labeled samples have no `detection_results` under any model version at all (e.g.
-      `KTR-72502946`, confirmed to exist as a raw sample but never processed) --
-      `load_slide_metric_counts` returns `None` for these rather than raising.
+    * Tanzania fallback, added after finding `tanzania_02032026`'s own `detection_results/` tree
+      is missing 146 slides that were never mirrored there (94 of `TZ2025-Box1`'s 98 slides, 52
+      of `Box5`'s 99) -- `gs://malaria-annotation-web` (the annotation tool's bucket) turns out
+      to hold `samples/<sample_id>/fov_summary.csv` for every one of those 146 gap slides,
+      confirmed byte-for-byte identical to `tanzania_02032026`'s own copy on a sample that has
+      both (`RUB-62501326`: 324/324 `n_spots_detected` values match). Tried second, after the
+      primary `tanzania_02032026` lookup returns nothing, never instead of it.
 - Uganda (`gs://malaria-annotation-web`) has no per-FOV summary file, but
   `samples/<sample_id>/spots.csv` has the identical per-spot schema
-  (`sample_id,fov_id,x,y,log_radius,score,positive`) as Liberia/Tanzania's own `spots.csv` --
-  grouping by `fov_id` and counting rows reproduces `n_spots_detected` per FOV, and summing the
-  `positive` column per `fov_id` reproduces `n_positives`, without touching any image.
+  (`fov_id,x,y,radius,score,positive`) as Liberia/Tanzania's own `spots.csv`. **Caveat, found
+  2026-08-11 and not yet fixed:** grouping this by `fov_id` and counting rows was assumed to
+  reproduce `n_spots_detected`, but cross-checking against a Tanzania sample that has both this
+  file and a `fov_summary.csv` (`RUB-62501326`) shows the row count matches `n_spots_filtered`
+  exactly (0/324 mismatches) and `n_spots_detected` on zero FOVs. Uganda has no `fov_summary.csv`
+  anywhere to source true pre-filter `n_spots_detected` from, so the 10 Uganda rows already in
+  `data/results/crop-outlier-approach/results.csv` are on a different, already-partially-filtered
+  metric than every Liberia/Tanzania row -- flagged, not corrected, pending a decision on whether
+  `n_spots_detected` is recoverable for Uganda at all.
 """
 import csv
 import io
@@ -134,6 +144,10 @@ def _tz_fov_summary_blob_name(sample_id):
     return f"detection_results/{TZ_MODEL_VERSION}/{sample_id}/fov_summary.csv"
 
 
+def _annotation_fov_summary_blob_name(sample_id):
+    return f"samples/{sample_id}/fov_summary.csv"
+
+
 def _ug_spots_blob_name(sample_id):
     return f"samples/{sample_id}/spots.csv"
 
@@ -159,6 +173,11 @@ def load_slide_metric_counts(sample_id, country, metric="n_spots_detected"):
         counts = _parse_fov_summary_csv(text, metric) if text is not None else None
     elif key_country == "tz":
         text = _try_download_text(TZ_BUCKET, _tz_fov_summary_blob_name(sample_id))
+        if text is None:
+            # fallback: the annotation tool's bucket has fov_summary.csv for slides never
+            # mirrored into tanzania_02032026's own detection_results/ tree -- see module
+            # docstring's Tanzania fallback note.
+            text = _try_download_text(UG_BUCKET, _annotation_fov_summary_blob_name(sample_id))
         counts = _parse_fov_summary_csv(text, metric) if text is not None else None
     elif key_country == "ug":
         text = _try_download_text(UG_BUCKET, _ug_spots_blob_name(sample_id))
@@ -170,23 +189,29 @@ def load_slide_metric_counts(sample_id, country, metric="n_spots_detected"):
     return counts
 
 
-def slide_baseline(counts, fov_id):
-    """Leave-one-out baseline for one FOV against every other FOV on its slide: mean, std,
-    median, and scaled MAD (median absolute deviation), plus how many other FOVs contributed.
+def slide_baseline(counts):
+    """Whole-slide baseline computed once per slide, over *every* FOV with detection results on
+    it (the target FOV included, not left out): mean, std, median, and scaled MAD (median
+    absolute deviation), plus how many FOVs contributed.
+
+    Previously this excluded the specific FOV being scored (leave-one-out). Changed to include
+    every FOV uniformly -- for slides with 300+ FOVs the numeric difference from dropping one
+    value is negligible, and a single baseline per slide (computed once, reused for every FOV
+    scored against it) is simpler than recomputing per target.
 
     Median/MAD are the primary robust statistic (see module docstring's sibling,
-    analyze_crop_outliers.py, for why) -- they tolerate up to ~50% of the slide's *other* FOVs
-    being contaminated with elevated counts before breaking, unlike mean/std which even one or
-    two such FOVs can already skew. Mean/std are still returned so a large divergence between
-    the two is itself visible as a signal.
+    analyze_crop_outliers.py, for why) -- they tolerate up to ~50% of a slide's FOVs being
+    contaminated with elevated counts before breaking, unlike mean/std which even one or two such
+    FOVs can already skew. Mean/std are still returned so a large divergence between the two is
+    itself visible as a signal.
     """
-    others = [v for other_fov, v in counts.items() if other_fov != fov_id]
-    n = len(others)
+    values = list(counts.values())
+    n = len(values)
     if n == 0:
-        return {"mean": None, "std": None, "median": None, "mad": None, "n_other_fovs": 0}
+        return {"mean": None, "std": None, "median": None, "mad": None, "n_fovs": 0}
 
-    mean = statistics.mean(others)
-    std = statistics.stdev(others) if n >= 2 else 0.0
-    median = statistics.median(others)
-    mad = MAD_SCALE * statistics.median(abs(v - median) for v in others)
-    return {"mean": mean, "std": std, "median": median, "mad": mad, "n_other_fovs": n}
+    mean = statistics.mean(values)
+    std = statistics.stdev(values) if n >= 2 else 0.0
+    median = statistics.median(values)
+    mad = MAD_SCALE * statistics.median(abs(v - median) for v in values)
+    return {"mean": mean, "std": std, "median": median, "mad": mad, "n_fovs": n}

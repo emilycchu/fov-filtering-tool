@@ -1,7 +1,8 @@
 """Crop/parasite-outlier approach: for every FOV in data/labels/overexposure-diverse-080726.csv,
 compare its per-FOV count for one of two metrics (`--metric`, see crop_counts.py's module
-docstring) against a leave-one-out baseline built from every *other* FOV on the same slide,
-reading only precomputed GCS detection output -- no image analysis at all.
+docstring) against a whole-slide baseline built from every FOV on the same slide (the target FOV
+included, not left out), reading only precomputed GCS detection output -- no image analysis at
+all.
 
 - `n_spots_detected` (default) -- raw candidate fluorescent-spot crops before ML filtering.
 - `n_positives` -- crops the ML classifier actually confirmed as a parasite.
@@ -52,7 +53,7 @@ METRIC_CONFIG = {
     "n_positives": {"out_csv": RESULTS_DIR / "results_parasites.csv", "target_field": "target_n_positives"},
 }
 
-SMALL_SLIDE_THRESHOLD = 20        # fewer than this many *other* FOVs on the slide -> thin baseline
+SMALL_SLIDE_THRESHOLD = 20        # fewer than this many FOVs on the slide -> thin baseline
 MEAN_MEDIAN_DIVERGENCE_FRAC = 0.25  # |mean - median| > this fraction of median -> likely-unclean slide
 OUTLIER_ZSCORE = 2.0              # |robust_zscore| >= this -> high_outlier / low_outlier
 
@@ -61,7 +62,7 @@ def fieldnames_for(metric):
     return [
         "sample_id", "fov_id", "country", "spot_truth", "notes",
         METRIC_CONFIG[metric]["target_field"], "baseline_mean", "baseline_std", "baseline_median",
-        "baseline_mad", "n_other_fovs_on_slide", "ratio_to_median", "robust_zscore", "mean_zscore",
+        "baseline_mad", "n_fovs_on_slide", "ratio_to_median", "robust_zscore", "mean_zscore",
         "flags", "no_data_reason",
     ]
 
@@ -69,7 +70,7 @@ def fieldnames_for(metric):
 def _missing_row(base, reason, metric):
     base.update({
         METRIC_CONFIG[metric]["target_field"]: "", "baseline_mean": "", "baseline_std": "",
-        "baseline_median": "", "baseline_mad": "", "n_other_fovs_on_slide": "",
+        "baseline_median": "", "baseline_mad": "", "n_fovs_on_slide": "",
         "ratio_to_median": "", "robust_zscore": "", "mean_zscore": "",
         "flags": "no_data", "no_data_reason": reason,
     })
@@ -94,9 +95,9 @@ def process_row(row, sample_id_counts, metric):
         return _missing_row(base, "sample has detection_results, but this fov_id is missing from it", metric)
 
     target = counts[fov_id]
-    stats = slide_baseline(counts, fov_id)
-    mean, std, median, mad, n_other = (
-        stats["mean"], stats["std"], stats["median"], stats["mad"], stats["n_other_fovs"],
+    stats = slide_baseline(counts)
+    mean, std, median, mad, n_fovs = (
+        stats["mean"], stats["std"], stats["median"], stats["mad"], stats["n_fovs"],
     )
 
     ratio_to_median = target / median if median else None
@@ -104,7 +105,7 @@ def process_row(row, sample_id_counts, metric):
     mean_zscore = (target - mean) / std if std else None
 
     flags = []
-    if n_other < SMALL_SLIDE_THRESHOLD:
+    if n_fovs < SMALL_SLIDE_THRESHOLD:
         flags.append("small_slide")
     if sample_id_counts[sample_id] > 1:
         flags.append("same_slide_contamination")
@@ -123,7 +124,7 @@ def process_row(row, sample_id_counts, metric):
         "baseline_std": round(std, 3),
         "baseline_median": median,
         "baseline_mad": round(mad, 3),
-        "n_other_fovs_on_slide": n_other,
+        "n_fovs_on_slide": n_fovs,
         "ratio_to_median": round(ratio_to_median, 3) if ratio_to_median is not None else "",
         "robust_zscore": round(robust_zscore, 3) if robust_zscore is not None else "",
         "mean_zscore": round(mean_zscore, 3) if mean_zscore is not None else "",
