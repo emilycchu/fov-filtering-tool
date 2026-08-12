@@ -23,9 +23,24 @@ pulls the mean far from the median while barely moving it).
 
 **Code:** `scripts/crop-outlier-approach/case_study_ktr72502946.py`, reusing
 `crop_counts.load_slide_metric_counts`/`slide_baseline` unmodified. Full per-FOV output:
-`case-study-KTR-72502946.csv` (324 rows). Run with `--previews` to also render the raw
-fluorescence thumbnails below (streamed from GCS via `src.gcs_fov_multi.load_fov_image`, same
-700px-downscale + caption convention as `scripts/render_fn_fp_previews.py`).
+`case-study-KTR-72502946.csv` (324 rows). Run with `--previews` to also render the three 700px
+raw fluorescence previews below, or `--thumbs` for the 260px contact sheet of the top 15
+(streamed from GCS via `src.gcs_fov_multi.load_fov_image`, same downscale + caption convention as
+`scripts/render_fn_fp_previews.py`).
+
+Worth noting the raw fluorescence images for this slide were in `tanzania_02032026` all along
+(`TZ2025-Box5/KTR-72502946/fluorescent-*.png`) -- it is specifically the `detection_results/`
+tree that never got the sample mirrored in. So the Tanzania gap described above costs the
+pipeline its crop counts, not its pixels.
+
+**Model-version note (2026-08-12).** The fallback's `fov_summary.csv` for this slide comes from
+model O2.0, not the `v8_hardneg_single_t0.995` the pipeline standardizes Tanzania on (see
+`../README.md`'s Caveats). **This case study is unaffected:** `n_spots_detected` is produced by
+the spot-finding step upstream of the classifier and is identical across model versions --
+verified per-FOV on all 8 TZ slides that have both copies, and separately here by the fact that
+this slide's O1.9, O2.0 and v8_hardneg_single prediction files all have exactly 15059 rows
+(`= sum(n_spots_filtered)`). Every number on this page is a `n_spots_detected` number. Only
+`n_positives` is version-dependent, and this case study does not use it.
 
 ## Results
 
@@ -72,6 +87,40 @@ Range: -1.461 to 163.527. A single FOV dominates everything above `z=10` -- see 
 | 227 | - | 151 | 2.849 | 3.672 |
 | 312 | - | 151 | 2.849 | 3.672 |
 | 240 | - | 142 | 2.679 | 3.335 |
+
+### All 15, with thumbnails
+
+One 260px raw-fluorescence thumbnail per row of the table above, captioned in-image with `fov`
+and `robust_zscore` (red caption = `high_outlier`, i.e. `z >= 2`; all 15 qualify). Rendered by
+`case_study_ktr72502946.py --thumbs`. The right-hand column is a read off *this* thumbnail only --
+see Caveats for how much weight it can carry.
+
+| fov_id | z | thumbnail | what the image shows |
+|---|---|---|---|
+| 198 | 163.527 | ![fov 198](previews/thumbs/KTR-72502946__fov198__thumb.png) | **The only diffuse halo in the top 15.** One enormous saturating blue glow filling nearly the whole frame. |
+| 308 | 7.832 | ![fov 308](previews/thumbs/KTR-72502946__fov308__thumb.png) | Debris. Dark field, several large saturated blobs, distinctive diagonal streak of puncta lower-left. No glow. |
+| 95 | 5.284 | ![fov 95](previews/thumbs/KTR-72502946__fov95__thumb.png) | Puncta concentrated in a horizontal band across mid-frame, suggesting a seam/scan-line artifact. No glow. |
+| 77 | 4.984 | ![fov 77](previews/thumbs/KTR-72502946__fov77__thumb.png) | Sparse bright puncta scattered fairly evenly over a dark field. No glow. |
+| 294 | 4.984 | ![fov 294](previews/thumbs/KTR-72502946__fov294__thumb.png) | Puncta strung along a rough vertical chain down the right side. No glow. |
+| 94 | 4.909 | ![fov 94](previews/thumbs/KTR-72502946__fov94__thumb.png) | Sparse puncta plus a few larger blue blobs near center; faint horizontal seam. No glow. |
+| 276 | 4.796 | ![fov 276](previews/thumbs/KTR-72502946__fov276__thumb.png) | Scattered puncta, noticeably denser in the right half. No glow. |
+| 167 | 4.422 | ![fov 167](previews/thumbs/KTR-72502946__fov167__thumb.png) | Scattered puncta with two or three large blue blobs at left and right. No glow. |
+| 136 | 4.347 | ![fov 136](previews/thumbs/KTR-72502946__fov136__thumb.png) | The blobbiest of the set -- many distinctly large, round blue objects, densest upper-right. No glow. |
+| 149 | 4.122 | ![fov 149](previews/thumbs/KTR-72502946__fov149__thumb.png) | Puncta in a vertical chain through center-right. No glow. |
+| 131 | 3.822 | ![fov 131](previews/thumbs/KTR-72502946__fov131__thumb.png) | Puncta clustered center-right and lower-right. No glow. |
+| 113 | 3.71 | ![fov 113](previews/thumbs/KTR-72502946__fov113__thumb.png) | Comparatively dense, evenly scattered small puncta. No glow. |
+| 227 | 3.672 | ![fov 227](previews/thumbs/KTR-72502946__fov227__thumb.png) | Puncta along an arc across the upper-middle, several large blobs on it. No glow. |
+| 312 | 3.672 | ![fov 312](previews/thumbs/KTR-72502946__fov312__thumb.png) | Mostly empty dark field with puncta hugging the right edge in a vertical strip. No glow. |
+| 240 | 3.335 | ![fov 240](previews/thumbs/KTR-72502946__fov240__thumb.png) | Puncta clustered through the left and center. No glow. |
+
+**The pattern in that column is the main new finding here: 1 halo, 14 debris.** FOV 198 is the
+only diffuse glow anywhere in the slide's flagged tail; every other FOV the signal ranks highest
+is elevated because the spot detector faithfully counted punctate junk. FOV 308, which the
+original write-up singled out as a false positive after pulling its image, turns out to be the
+*typical* case rather than an unlucky one. A recurring sub-pattern: in at least 7 of the 14
+(308, 95, 294, 149, 227, 312, 240) the puncta are arranged along a line, band, edge, or arc
+rather than spread at random, which is what debris and tile-boundary contamination look like and
+is not what a halo looks like.
 
 ## The three FOVs that matter, with images
 
@@ -134,6 +183,16 @@ is a straightforward false positive, and it's the `background`/`artifact` confou
 identified as the dominant source of overlap between the groups -- a whole-frame crop count can't
 distinguish "one big halo inflated my count" from "lots of little bright junk inflated my count."
 
+**The top-15 thumbnails turn that single data point into a pattern: 14 of the slide's 15
+highest-scoring FOVs are punctate debris, and exactly one is a halo.** So on this slide the
+crop-count signal is not a halo detector that occasionally trips on junk -- it is a junk detector
+that happens to rank the one real halo first. The ranking does do useful work (198's `z=163.5` is
+20x the next value, and the halo is the top hit), but everything below that single FOV is
+debris, and the gap between "flagged" and "is a halo" is therefore far wider than the aggregate
+numbers alone suggest. This is a one-slide result and the caveats below matter, but it is a
+concrete illustration of how thin the halo-specific precision of this signal can be past the
+top-ranked FOV.
+
 Worth noting this cuts differently under v2's redefinition (positive = significant excess of
 erroneous crops, *regardless* of cause): by that definition fov 308 is arguably a true positive,
 since 262 debris-driven crops are genuinely erroneous crops the classifier has to process. Which
@@ -149,12 +208,25 @@ second one.
 - The fov 308 read above is from a single downscaled preview, not a full-resolution review or a
   second annotator -- confident enough to say "not a diffuse halo," but it hasn't been through
   the labeling process the 76-row set went through.
-- The remaining 31 FOVs on this slide with `robust_zscore >= 2` (but below 6) were not inspected;
-  given fov 308, some fraction of those are likely debris rather than halos too.
+- **The same applies with more force to the other 13 thumbnails, which are 260px rather than
+  700px.** "Diffuse glow vs. punctate specks" is a coarse enough distinction to survive that
+  downscale -- a halo like 198's is unmistakable even at thumbnail size -- but these are eyeball
+  reads by one reviewer off a contact sheet, not labels. The finer descriptions (streak vs. band
+  vs. cluster, blob size) are impressions and should not be treated as annotations. A faint halo
+  of the fov 54 variety *co-occurring* with debris in one of these frames could well be invisible
+  at 260px, so "14 debris" is a claim about the dominant content of each frame, not proof that
+  none of them contains any halo at all.
+- The top 15 stops at `robust_zscore = 3.335`. 18 further FOVs on this slide sit at `z >= 2` below
+  that cut and were not inspected; given that all 14 non-198 FOVs above the cut are debris, those
+  are likely debris too, but they were not looked at.
+- The 1-halo/14-debris ratio is specific to this slide's flagged tail and should not be read as a
+  precision estimate for the approach overall. It is one slide, and a slide whose single halo is
+  an extreme outlier.
 
 ## Files
 
 - `case-study-KTR-72502946.csv` -- full per-FOV output (324 rows)
-- `previews/KTR-72502946__fov{54,198,308}__preview.png` -- the three thumbnails above
+- `previews/KTR-72502946__fov{54,198,308}__preview.png` -- the three 700px previews above
+- `previews/thumbs/KTR-72502946__fov*__thumb.png` -- the 15 260px top-N thumbnails (~1.1MB total)
 - `../../../../scripts/crop-outlier-approach/case_study_ktr72502946.py` -- script that produced
-  both (`--previews` for the thumbnails)
+  all of the above (`--previews` for the three previews, `--thumbs` for the 15 thumbnails)
