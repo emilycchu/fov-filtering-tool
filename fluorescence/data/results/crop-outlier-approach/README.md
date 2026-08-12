@@ -536,10 +536,20 @@ its own by the time `n_positives` is computed.
       `n_positives`. Neither is done; the fallback currently serves both metrics.
 - **Uganda's `n_spots_detected` is mislabeled (found 2026-08-11, not fixed).** Uganda's only
   source (`samples/<id>/spots.csv` in `malaria-annotation-web`) actually reproduces
-  `n_spots_filtered`, not `n_spots_detected`, per a cross-check against a Tanzania sample with
-  both files. The 10 Uganda rows in the tables above are on a different, already-partially-
-  filtered metric than every Liberia/Tanzania row. Uganda has no `fov_summary.csv` anywhere to
-  recover true `n_spots_detected` from -- unresolved whether it's recoverable at all.
+  `n_spots_filtered`, not `n_spots_detected`, per a cross-check on `RUB-62501326` (row count
+  matches `n_spots_filtered` on 324/324 FOVs, `n_spots_detected` on 0/324). The 10 Uganda rows in
+  the tables above are on a different, already-partially-filtered metric than every
+  Liberia/Tanzania row. Uganda has no `fov_summary.csv` anywhere to recover true
+  `n_spots_detected` from -- unresolved whether it's recoverable at all.
+    * **Wording tightened 2026-08-12.** This previously said the cross-check used "a Tanzania
+      sample with both files," which reads as both files in one place. They are in two different
+      buckets: `spots.csv` in `malaria-annotation-web`, `fov_summary.csv` in `tanzania_02032026`.
+      `RUB-62501326` has no annotation-bucket `fov_summary.csv`, which is exactly why citing it for
+      the byte-identity claim two caveats up was wrong. The annotation bucket has two mutually
+      exclusive layouts -- older (`spots.csv`, no `fov_summary.csv`) and newer (`fov_summary.csv`,
+      no `spots.csv`); all 146 gap slides are newer-layout (146/146 vs 0/146, verified). The
+      finding itself is unchanged and reproduces exactly; it just rests on one older-layout slide,
+      and no second corroborating slide has been sought.
 - **`v8_hardneg_single_t0.995` was used for every Liberia/Tanzania row**, chosen because
   `n_spots_detected` was verified identical across all available model-version run folders for
   the slides checked (the upstream spot-finding step is shared across models). `n_positives`

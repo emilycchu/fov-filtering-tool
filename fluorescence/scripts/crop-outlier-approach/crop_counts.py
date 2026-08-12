@@ -71,9 +71,19 @@ buckets directly (`gcloud storage ls`/`cat`), not by reading any existing code:
   `samples/<sample_id>/spots.csv` has the identical per-spot schema
   (`fov_id,x,y,radius,score,positive`) as Liberia/Tanzania's own `spots.csv`. **Caveat, found
   2026-08-11 and not yet fixed:** grouping this by `fov_id` and counting rows was assumed to
-  reproduce `n_spots_detected`, but cross-checking against a Tanzania sample that has both this
-  file and a `fov_summary.csv` (`RUB-62501326`) shows the row count matches `n_spots_filtered`
-  exactly (0/324 mismatches) and `n_spots_detected` on zero FOVs. Uganda has no `fov_summary.csv`
+  reproduce `n_spots_detected`, but cross-checking `RUB-62501326` shows the row count matches
+  `n_spots_filtered` exactly (324/324 FOVs) and `n_spots_detected` on zero FOVs (0/324).
+  Precision about what "a sample that has both" means here, since the earlier wording implied one
+  location and that ambiguity is what produced the retracted byte-identity claim above: this slide
+  has `spots.csv` in `malaria-annotation-web` and `fov_summary.csv` in `tanzania_02032026` -- one
+  file per bucket, not two files in one. It has no annotation-bucket `fov_summary.csv` at all.
+  That is not an anomaly: the annotation bucket carries two mutually exclusive per-sample layouts,
+  an older one with `spots.csv` and no `fov_summary.csv` (which `RUB-62501326` is on, and which is
+  what makes it usable for this check at all) and a newer one with `fov_summary.csv` and no
+  `spots.csv` -- all 146 Tanzania gap slides are on the newer one (146/146 have `fov_summary.csv`,
+  0/146 have `spots.csv`, verified 2026-08-12). Note this cross-check therefore rests on a single
+  slide, on the older layout; no second corroborating slide has been looked for. Uganda has no
+  `fov_summary.csv`
   anywhere to source true pre-filter `n_spots_detected` from, so the 10 Uganda rows already in
   `data/results/crop-outlier-approach/results.csv` are on a different, already-partially-filtered
   metric than every Liberia/Tanzania row -- flagged, not corrected, pending a decision on whether
