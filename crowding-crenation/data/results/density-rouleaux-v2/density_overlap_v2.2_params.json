@@ -141,5 +141,17 @@
       "threshold": null,
       "max_label": "heavy rouleaux"
     }
+  },
+  "empty_field_override": {
+    "enabled": true,
+    "rule": "all_below",
+    "thresholds": {
+      "otsu_separability": 0.5166014413304858,
+      "lbp_entropy": 3.117950263366273,
+      "glcm_contrast": 26.592611448425938,
+      "edge_density_unmasked": 0.05925997448979592
+    },
+    "density_label": "sparser",
+    "overlap_label": "no rouleaux"
   }
 }

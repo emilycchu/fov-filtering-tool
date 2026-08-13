@@ -15,7 +15,7 @@ import json
 from multiprocessing import Pool
 from pathlib import Path
 
-from _v2_common import PARAMS_JSON, apply_saturation_override, compute_features, list_image_paths, load_image
+from _v2_common import PARAMS_JSON, apply_label_overrides, compute_features, list_image_paths, load_image
 from src.composite_v2 import bucket, weighted_composite
 
 
@@ -39,8 +39,7 @@ def score_image_v2(path, params):
     density_score, density_label = _score_axis(features, params["density"])
     overlap_score, overlap_label = _score_axis(features, params["overlap"])
 
-    density_label = apply_saturation_override(density_label, features, params.get("saturation_override", {}).get("density"))
-    overlap_label = apply_saturation_override(overlap_label, features, params.get("saturation_override", {}).get("overlap"))
+    density_label, overlap_label = apply_label_overrides(density_label, overlap_label, features, params)
 
     return {
         "filename": Path(str(path)).name,

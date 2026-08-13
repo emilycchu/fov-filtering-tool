@@ -41,6 +41,11 @@ TANZANIA_080526_BUCKET = "tanzania_02032026"
 TANZANIA_080526_BLOB_PREFIX = "TZ2025-Box5/KTR-72502946"
 TANZANIA_080526_IMAGE_NAME = "dpc-{fov_id:03d}-KTR-72502946.png"
 
+# nigeria-081226: 8 FOVs across 2 slides, local BMPs. Labels live in a hand-written CSV
+# (the `_sparse` filename suffix is not parsed -- see data/labels/nigeria-081226/).
+NIGERIA_LABELS_CSV = ROOT / "data" / "labels" / "nigeria-081226" / "nigeria-081226-annotated.csv"
+NIGERIA_IMAGE_DIR = ROOT / "data" / "raw" / "nigeria-081226"
+
 RESULTS_DIR = ROOT / "data" / "results" / "density-rouleaux-v2"
 MERGED_LABELS_CSV = RESULTS_DIR / "merged-labels.csv"
 FEATURES_CSV = RESULTS_DIR / "features.csv"
@@ -178,6 +183,74 @@ def apply_saturation_override(label, features, override_cfg):
     """
     if not override_cfg or not override_cfg.get("enabled"):
         return label
-    if features.get(override_cfg["feature"], 0.0) >= override_cfg["threshold"]:
+    # float() because some callers pass a raw CSV row (strings), not a computed feature dict
+    if float(features.get(override_cfg["feature"], 0.0)) >= override_cfg["threshold"]:
         return override_cfg["max_label"]
     return label
+
+
+# The four features that read a near-empty field correctly: all are texture/contrast measures
+# that go to ~0 with no cells present. See data/results/nigeria-081226/README.md.
+EMPTY_FIELD_FEATURES = ("otsu_separability", "lbp_entropy", "glcm_contrast", "edge_density_unmasked")
+
+
+def empty_field_features_below(features, cfg):
+    """Which of cfg["thresholds"]'s features sit strictly below their floor.
+
+    A feature that is missing or blank is deliberately NOT counted as below: the gate forces
+    the bottom bucket, so incomplete input must fail it rather than trip it.
+    """
+    if not cfg:
+        return []
+    below = []
+    for name, floor in cfg["thresholds"].items():
+        value = features.get(name)
+        if value is None or value == "":
+            continue
+        if float(value) < floor:
+            below.append(name)
+    return below
+
+
+def empty_field_fired(features, cfg):
+    """True when every gate feature is below its floor and the gate is enabled."""
+    if not cfg or not cfg.get("enabled"):
+        return False
+    rule = cfg.get("rule", "all_below")
+    if rule != "all_below":
+        raise ValueError(f"unknown empty_field_override rule {rule!r}")
+    return len(empty_field_features_below(features, cfg)) == len(cfg["thresholds"])
+
+
+def apply_empty_field_override(density_label, overlap_label, features, cfg):
+    """Force the bottom bucket on *both* axes when the field is empty.
+
+    Unlike apply_saturation_override's per-axis ceiling, this is one joint test with two
+    outputs: with no cells present there is nothing for either composite to describe, so its
+    output is discarded rather than adjusted. On a near-empty field Otsu has no bimodal
+    histogram to split, so `coverage` and `saturation_score` read background noise as dense
+    tissue while the four features that know better are clipped to 0 by normalize() -- the
+    composite is answering the wrong question, and no reweighting fixes that.
+
+    Measured against the 661-FOV v2.2 calibration set this fires on 3 FOVs, all of them
+    manually labeled sparser + no rouleaux and already predicted as such: exact-match is
+    unchanged at 0.6974 / 0.6838. See scripts/combined/README.md.
+    """
+    if not empty_field_fired(features, cfg):
+        return density_label, overlap_label
+    return cfg["density_label"], cfg["overlap_label"]
+
+
+def apply_label_overrides(density_label, overlap_label, features, params):
+    """Every params-driven post-composite label override, in order.
+
+    Call this rather than the individual override functions -- it is the single place a new
+    override has to be added, instead of the four call sites that score a feature vector
+    (score_fov_v2.py, plot_bucket_comparison_v2.py, tanzania_080526_rescore.py,
+    nigeria_081226.py).
+    """
+    saturation = params.get("saturation_override") or {}
+    density_label = apply_saturation_override(density_label, features, saturation.get("density"))
+    overlap_label = apply_saturation_override(overlap_label, features, saturation.get("overlap"))
+    return apply_empty_field_override(density_label, overlap_label, features,
+                                      params.get("empty_field_override"))
