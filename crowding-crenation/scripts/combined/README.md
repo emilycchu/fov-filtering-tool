@@ -220,6 +220,23 @@ trusting it on a new slide or stain, and expect to refit if there's a systematic
 (`apply_saturation_override` is a documented no-op pending a fitted cutoff) — the project
 decision so far is to keep it data-driven rather than a hard rule.
 
+**Empty-field gate (v2.2 onward):** the one place a hard override *is* enabled. When all four
+of `otsu_separability`, `lbp_entropy`, `glcm_contrast` and `edge_density_unmasked` fall below
+their calibration p2 floor, `apply_empty_field_override` returns the bottom bucket on both
+axes and the composite is discarded. This is not a tuning choice: on a field with no cells,
+Otsu has no bimodal histogram to split, so `coverage` and `saturation_score` read background
+noise as dense tissue while the four features that know better are clipped to 0 by
+`normalize()` — no reweighting can fix a composite that is answering the wrong question.
+
+It is a measured no-op in-distribution: over the 661-FOV v2.2 set it fires on 3 FOVs, all
+manually labeled `sparser` + `no rouleaux` and already predicted as such, leaving exact-match
+unchanged at 0.6974 / 0.6838. Run `check_empty_field_gate.py` to reproduce that, and re-run it
+after any recalibration — the floors move with the fit. Requiring all four is load-bearing:
+3-of-4 picks up a genuinely-`monolayer` FOV. Configured per-params-file as
+`empty_field_override`; `write_params_json` emits it automatically, disabled if feature
+selection dropped one of the four (as the original 5-feature v2 fit did). See
+`data/results/nigeria-081226/README.md` for the failure that motivated it.
+
 ## Repository layout (this directory)
 
 ```
@@ -230,6 +247,7 @@ extract_features_v2.py    compute_features() over the merged set -> features.csv
 calibrate_v2.py            v2: axis-exclusive partial-correlation selection + ridge + PAVA
 calibrate_v2.1.py          v2.1: full-feature-pool refit, same 337 FOVs
 calibrate_v2.2.py          v2.2: full-feature-pool refit, pooled to 661 FOVs
+check_empty_field_gate.py  assert the empty-field gate is a no-op on the calibration set
 score_fov_v2.py            inference: score a new image/directory with a params JSON
 plot_results_v2.py         density/Rouleaux/density-vs-Rouleaux scatter plots
 plot_bucket_comparison_v2.py  manual-vs-model bucket-grid comparison plot

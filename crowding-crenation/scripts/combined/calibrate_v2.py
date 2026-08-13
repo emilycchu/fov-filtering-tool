@@ -17,6 +17,7 @@ from scipy.stats import binomtest, spearmanr
 from _v2_common import (
     AXIS_DISPLAY_NAMES,
     DENSITY_LEVELS,
+    EMPTY_FIELD_FEATURES,
     FEATURES_CSV,
     OVERLAP_LEVELS,
     PARAMS_JSON,
@@ -353,6 +354,32 @@ def calibrate_axis(rows, axis, ord_key, label_key, levels, candidate_features):
     }
 
 
+def empty_field_block(density_result):
+    """The empty-field gate config, with its floors taken from this fit's density p2 values so
+    a refit retunes the gate automatically (see apply_empty_field_override in _v2_common.py).
+
+    All four features are required. A 3-of-4 gate is not a milder version of the same rule --
+    measured on the v2.2 set it picks up a genuinely-monolayer FOV, where 4-of-4 picks up only
+    true sparser fields. So if feature selection drops one (the original 5-feature v2 fit has
+    no otsu_separability, for instance), the gate ships *disabled* with the floors it could
+    derive, rather than silently enforcing a weaker rule. Enabling it is then a deliberate
+    decision, taken after re-running scripts/combined/check_empty_field_gate.py.
+    """
+    available = [n for n in EMPTY_FIELD_FEATURES if n in density_result["normalization"]]
+    missing = [n for n in EMPTY_FIELD_FEATURES if n not in density_result["normalization"]]
+    if missing:
+        print(f"warning: empty-field gate needs all of {list(EMPTY_FIELD_FEATURES)}, but feature "
+              f"selection dropped {missing} from the density axis -- writing the gate DISABLED. "
+              "A 3-of-4 rule is measurably worse, so do not just flip `enabled` without re-checking.")
+    return {
+        "enabled": not missing,
+        "rule": "all_below",
+        "thresholds": {n: density_result["normalization"][n][0] for n in available},
+        "density_label": DENSITY_LEVELS[0],
+        "overlap_label": OVERLAP_LEVELS[0],
+    }
+
+
 def write_params_json(out_path, density_result, overlap_result, n_fovs):
     def axis_block(res, levels):
         return {
@@ -373,6 +400,7 @@ def write_params_json(out_path, density_result, overlap_result, n_fovs):
             "density": {"enabled": False, "feature": "saturation_score", "threshold": None, "max_label": "very dense"},
             "overlap": {"enabled": False, "feature": "saturation_score", "threshold": None, "max_label": "heavy rouleaux"},
         },
+        "empty_field_override": empty_field_block(density_result),
     }
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with open(out_path, "w") as f:

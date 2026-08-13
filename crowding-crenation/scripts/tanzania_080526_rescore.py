@@ -21,7 +21,7 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "scripts" / "combined"))
 
-from _v2_common import apply_saturation_override  # noqa: E402
+from _v2_common import apply_label_overrides  # noqa: E402
 from src.composite_v2 import bucket, weighted_composite  # noqa: E402
 from tanzania_080526 import OUT_DIR, plot_jitter_grid  # noqa: E402
 
@@ -43,8 +43,7 @@ def _axis_score_and_label(features, axis_params):
 def score_row(row, params):
     density_score, density_label = _axis_score_and_label(row, params["density"])
     overlap_score, overlap_label = _axis_score_and_label(row, params["overlap"])
-    density_label = apply_saturation_override(density_label, row, params.get("saturation_override", {}).get("density"))
-    overlap_label = apply_saturation_override(overlap_label, row, params.get("saturation_override", {}).get("overlap"))
+    density_label, overlap_label = apply_label_overrides(density_label, overlap_label, row, params)
     return density_score, density_label, overlap_score, overlap_label
 
 

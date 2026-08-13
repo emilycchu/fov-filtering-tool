@@ -1,0 +1,25 @@
+filename,axis,feature,raw,calib_p2,calib_p98,normalized,weight,contribution,clipped,calib_sparser_median,gate_feature,gate_below_floor,gate_fired,composite_label,final_label
+HP231668_20251210_031002_3_sparse.bmp,density,saturation_score,0.176397,0.033679,0.178099,0.9882,0.2465,0.2436,,0.043111,,,yes,dense,sparser
+HP231668_20251210_031002_3_sparse.bmp,density,coverage,0.351332,0.073468,0.438605,0.761,0.2356,0.1793,,0.096028,,,yes,dense,sparser
+HP231668_20251210_031002_3_sparse.bmp,density,tile_glcm_patchiness,2.794873,0.124473,0.933945,1.0,0.1714,0.1714,high,0.475684,,,yes,dense,sparser
+HP231668_20251210_031002_3_sparse.bmp,density,tile_glcm_cv,0.611997,0.062423,0.311117,1.0,0.0822,0.0822,high,0.230866,,,yes,dense,sparser
+HP231668_20251210_031002_3_sparse.bmp,density,otsu_separability,0.497921,0.516601,0.612366,0.0,0.014,0.0,low,0.536287,yes,yes,yes,dense,sparser
+HP231668_20251210_031002_3_sparse.bmp,density,lbp_entropy,2.746933,3.11795,4.196148,0.0,0.0654,0.0,low,3.249557,yes,yes,yes,dense,sparser
+HP231668_20251210_031002_3_sparse.bmp,density,glcm_contrast,6.882969,26.592611,87.105746,0.0,0.0874,0.0,low,30.123873,yes,yes,yes,dense,sparser
+HP231668_20251210_031002_3_sparse.bmp,density,edge_density_unmasked,0.00495,0.05926,0.181143,0.0,0.0976,0.0,low,0.06856,yes,yes,yes,dense,sparser
+HP231668_20251210_031002_4_sparse.bmp,density,saturation_score,0.274423,0.033679,0.178099,1.0,0.2465,0.2465,high,0.043111,,,yes,very dense,sparser
+HP231668_20251210_031002_4_sparse.bmp,density,coverage,0.48427,0.073468,0.438605,1.0,0.2356,0.2356,high,0.096028,,,yes,very dense,sparser
+HP231668_20251210_031002_4_sparse.bmp,density,tile_glcm_patchiness,2.195473,0.124473,0.933945,1.0,0.1714,0.1714,high,0.475684,,,yes,very dense,sparser
+HP231668_20251210_031002_4_sparse.bmp,density,tile_glcm_cv,0.541292,0.062423,0.311117,1.0,0.0822,0.0822,high,0.230866,,,yes,very dense,sparser
+HP231668_20251210_031002_4_sparse.bmp,density,otsu_separability,0.433326,0.516601,0.612366,0.0,0.014,0.0,low,0.536287,yes,yes,yes,very dense,sparser
+HP231668_20251210_031002_4_sparse.bmp,density,lbp_entropy,2.687267,3.11795,4.196148,0.0,0.0654,0.0,low,3.249557,yes,yes,yes,very dense,sparser
+HP231668_20251210_031002_4_sparse.bmp,density,glcm_contrast,5.759286,26.592611,87.105746,0.0,0.0874,0.0,low,30.123873,yes,yes,yes,very dense,sparser
+HP231668_20251210_031002_4_sparse.bmp,density,edge_density_unmasked,0.003299,0.05926,0.181143,0.0,0.0976,0.0,low,0.06856,yes,yes,yes,very dense,sparser
+HP231668_20251210_031002_1.bmp,density,coverage,0.514458,0.073468,0.438605,1.0,0.2356,0.2356,high,0.096028,,,no,very dense,very dense
+HP231668_20251210_031002_1.bmp,density,saturation_score,0.164922,0.033679,0.178099,0.9088,0.2465,0.224,,0.043111,,,no,very dense,very dense
+HP231668_20251210_031002_1.bmp,density,tile_glcm_patchiness,0.833433,0.124473,0.933945,0.8758,0.1714,0.1501,,0.475684,,,no,very dense,very dense
+HP231668_20251210_031002_1.bmp,density,edge_density_unmasked,0.206464,0.05926,0.181143,1.0,0.0976,0.0976,high,0.06856,yes,,no,very dense,very dense
+HP231668_20251210_031002_1.bmp,density,glcm_contrast,393.554694,26.592611,87.105746,1.0,0.0874,0.0874,high,30.123873,yes,,no,very dense,very dense
+HP231668_20251210_031002_1.bmp,density,tile_glcm_cv,0.345144,0.062423,0.311117,1.0,0.0822,0.0822,high,0.230866,,,no,very dense,very dense
+HP231668_20251210_031002_1.bmp,density,lbp_entropy,4.243314,3.11795,4.196148,1.0,0.0654,0.0654,high,3.249557,yes,,no,very dense,very dense
+HP231668_20251210_031002_1.bmp,density,otsu_separability,0.679425,0.516601,0.612366,1.0,0.014,0.014,high,0.536287,yes,,no,very dense,very dense

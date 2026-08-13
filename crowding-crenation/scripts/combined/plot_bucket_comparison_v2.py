@@ -38,7 +38,7 @@ from _v2_common import (
     OVERLAP_LEVELS,
     PARAMS_JSON,
     PLOTS_DIR,
-    apply_saturation_override,
+    apply_label_overrides,
     density_ordinal,
     display_level,
     overlap_ordinal,
@@ -60,8 +60,7 @@ def _axis_score_and_label(features, axis_params):
 def score_row(row, params):
     _, density_label = _axis_score_and_label(row, params["density"])
     _, overlap_label = _axis_score_and_label(row, params["overlap"])
-    density_label = apply_saturation_override(density_label, row, params.get("saturation_override", {}).get("density"))
-    overlap_label = apply_saturation_override(overlap_label, row, params.get("saturation_override", {}).get("overlap"))
+    density_label, overlap_label = apply_label_overrides(density_label, overlap_label, row, params)
     return density_ordinal(density_label), overlap_ordinal(overlap_label)
 
 
