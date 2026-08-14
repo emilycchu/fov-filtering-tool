@@ -49,6 +49,12 @@ NIGERIA_IMAGE_DIR = ROOT / "data" / "raw" / "nigeria-081226"
 RESULTS_DIR = ROOT / "data" / "results" / "density-rouleaux-v2"
 MERGED_LABELS_CSV = RESULTS_DIR / "merged-labels.csv"
 FEATURES_CSV = RESULTS_DIR / "features.csv"
+
+# LBP runtime study (bench_lbp.py -> extract_lbp_variants.py -> build_variant_features.py ->
+# compare_lbp_variants.py). Separate results dir so nothing here can overwrite the v2.2 fit.
+LBP_RUNTIME_DIR = ROOT / "data" / "results" / "lbp-runtime"
+LBP_VARIANTS_CSV = LBP_RUNTIME_DIR / "lbp-variants.csv"
+LBP_COMPARISON_CSV = LBP_RUNTIME_DIR / "variant-comparison.csv"
 PARAMS_JSON = RESULTS_DIR / "density_overlap_v2_params.json"
 REPORT_MD = RESULTS_DIR / "calibration-report.md"
 PLOTS_DIR = RESULTS_DIR / "plots"

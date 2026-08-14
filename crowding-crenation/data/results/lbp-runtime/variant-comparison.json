@@ -1,0 +1,630 @@
+{
+  "fixed_params": {
+    "exact": {
+      "n": 661,
+      "density": {
+        "exact_match": 0.697428139183056,
+        "off_by_one": 0.9818456883509834,
+        "flips_vs_v2_2": 0
+      },
+      "overlap": {
+        "exact_match": 0.6838124054462935,
+        "off_by_one": 0.9364599092284418,
+        "flips_vs_v2_2": 0
+      }
+    },
+    "step2": {
+      "n": 661,
+      "density": {
+        "exact_match": 0.697428139183056,
+        "off_by_one": 0.9818456883509834,
+        "flips_vs_v2_2": 0
+      },
+      "overlap": {
+        "exact_match": 0.6838124054462935,
+        "off_by_one": 0.9364599092284418,
+        "flips_vs_v2_2": 0
+      }
+    },
+    "step4": {
+      "n": 661,
+      "density": {
+        "exact_match": 0.697428139183056,
+        "off_by_one": 0.9818456883509834,
+        "flips_vs_v2_2": 0
+      },
+      "overlap": {
+        "exact_match": 0.6838124054462935,
+        "off_by_one": 0.9364599092284418,
+        "flips_vs_v2_2": 0
+      }
+    },
+    "step6": {
+      "n": 661,
+      "density": {
+        "exact_match": 0.697428139183056,
+        "off_by_one": 0.9818456883509834,
+        "flips_vs_v2_2": 0
+      },
+      "overlap": {
+        "exact_match": 0.6838124054462935,
+        "off_by_one": 0.9364599092284418,
+        "flips_vs_v2_2": 0
+      }
+    },
+    "step8": {
+      "n": 661,
+      "density": {
+        "exact_match": 0.697428139183056,
+        "off_by_one": 0.9818456883509834,
+        "flips_vs_v2_2": 0
+      },
+      "overlap": {
+        "exact_match": 0.6838124054462935,
+        "off_by_one": 0.9364599092284418,
+        "flips_vs_v2_2": 0
+      }
+    },
+    "step12": {
+      "n": 661,
+      "density": {
+        "exact_match": 0.697428139183056,
+        "off_by_one": 0.9818456883509834,
+        "flips_vs_v2_2": 0
+      },
+      "overlap": {
+        "exact_match": 0.6838124054462935,
+        "off_by_one": 0.9364599092284418,
+        "flips_vs_v2_2": 0
+      }
+    },
+    "step16": {
+      "n": 661,
+      "density": {
+        "exact_match": 0.697428139183056,
+        "off_by_one": 0.9818456883509834,
+        "flips_vs_v2_2": 0
+      },
+      "overlap": {
+        "exact_match": 0.6838124054462935,
+        "off_by_one": 0.9364599092284418,
+        "flips_vs_v2_2": 0
+      }
+    },
+    "step24": {
+      "n": 661,
+      "density": {
+        "exact_match": 0.6959152798789713,
+        "off_by_one": 0.9818456883509834,
+        "flips_vs_v2_2": 1
+      },
+      "overlap": {
+        "exact_match": 0.6838124054462935,
+        "off_by_one": 0.9364599092284418,
+        "flips_vs_v2_2": 0
+      }
+    },
+    "step32": {
+      "n": 661,
+      "density": {
+        "exact_match": 0.6944024205748865,
+        "off_by_one": 0.9818456883509834,
+        "flips_vs_v2_2": 2
+      },
+      "overlap": {
+        "exact_match": 0.6838124054462935,
+        "off_by_one": 0.9364599092284418,
+        "flips_vs_v2_2": 0
+      }
+    },
+    "step48": {
+      "n": 661,
+      "density": {
+        "exact_match": 0.6944024205748865,
+        "off_by_one": 0.9818456883509834,
+        "flips_vs_v2_2": 2
+      },
+      "overlap": {
+        "exact_match": 0.6838124054462935,
+        "off_by_one": 0.9364599092284418,
+        "flips_vs_v2_2": 0
+      }
+    },
+    "step64": {
+      "n": 661,
+      "density": {
+        "exact_match": 0.6928895612708018,
+        "off_by_one": 0.9818456883509834,
+        "flips_vs_v2_2": 5
+      },
+      "overlap": {
+        "exact_match": 0.6838124054462935,
+        "off_by_one": 0.9364599092284418,
+        "flips_vs_v2_2": 0
+      }
+    },
+    "step96": {
+      "n": 661,
+      "density": {
+        "exact_match": 0.6989409984871406,
+        "off_by_one": 0.9818456883509834,
+        "flips_vs_v2_2": 5
+      },
+      "overlap": {
+        "exact_match": 0.6838124054462935,
+        "off_by_one": 0.9364599092284418,
+        "flips_vs_v2_2": 0
+      }
+    }
+  },
+  "refit": {
+    "exact": {
+      "n": 661,
+      "params": "C:\\Users\\owlem\\Projects\\fov-filtering-tool\\crowding-crenation\\data\\results\\lbp-runtime\\density_overlap_v2.2-exact_params.json",
+      "density": {
+        "cv_mean_rho": 0.7829159282667437,
+        "oof_exact_match": 0.6944024205748865,
+        "oof_off_by_one": 0.9803328290468987,
+        "thresholds": [
+          0.29170478820639556,
+          0.4427152802675024,
+          0.5853422873767448,
+          0.7109074314234594
+        ],
+        "lbp_weight": 0.06535785877625594,
+        "dropped": [],
+        "pava_merges": []
+      },
+      "overlap": {
+        "cv_mean_rho": 0.7373217816510892,
+        "oof_exact_match": 0.6762481089258698,
+        "oof_off_by_one": 0.9379727685325264,
+        "thresholds": [
+          0.37380836070362045,
+          0.4507787511674879,
+          0.5533029367856078,
+          0.667166961306341
+        ],
+        "lbp_weight": null,
+        "dropped": [
+          "otsu_separability",
+          "lbp_entropy"
+        ],
+        "pava_merges": []
+      },
+      "gate_enabled": true
+    },
+    "step2": {
+      "n": 661,
+      "params": "C:\\Users\\owlem\\Projects\\fov-filtering-tool\\crowding-crenation\\data\\results\\lbp-runtime\\density_overlap_v2.2-step2_params.json",
+      "density": {
+        "cv_mean_rho": 0.7828821717782909,
+        "oof_exact_match": 0.6944024205748865,
+        "oof_off_by_one": 0.9803328290468987,
+        "thresholds": [
+          0.29168177386859717,
+          0.44252827862824096,
+          0.5852123476678208,
+          0.7100158660574736
+        ],
+        "lbp_weight": 0.06475227316601548,
+        "dropped": [],
+        "pava_merges": []
+      },
+      "overlap": {
+        "cv_mean_rho": 0.7373217816510892,
+        "oof_exact_match": 0.6762481089258698,
+        "oof_off_by_one": 0.9379727685325264,
+        "thresholds": [
+          0.37380836070362045,
+          0.4507787511674879,
+          0.5533029367856078,
+          0.667166961306341
+        ],
+        "lbp_weight": null,
+        "dropped": [
+          "otsu_separability",
+          "lbp_entropy"
+        ],
+        "pava_merges": []
+      },
+      "gate_enabled": true
+    },
+    "step4": {
+      "n": 661,
+      "params": "C:\\Users\\owlem\\Projects\\fov-filtering-tool\\crowding-crenation\\data\\results\\lbp-runtime\\density_overlap_v2.2-step4_params.json",
+      "density": {
+        "cv_mean_rho": 0.7828237946733715,
+        "oof_exact_match": 0.6944024205748865,
+        "oof_off_by_one": 0.9803328290468987,
+        "thresholds": [
+          0.2917240833655206,
+          0.4425574463050843,
+          0.5850883757833025,
+          0.7099781981850817
+        ],
+        "lbp_weight": 0.06453025982490117,
+        "dropped": [],
+        "pava_merges": []
+      },
+      "overlap": {
+        "cv_mean_rho": 0.7373217816510892,
+        "oof_exact_match": 0.6762481089258698,
+        "oof_off_by_one": 0.9379727685325264,
+        "thresholds": [
+          0.37380836070362045,
+          0.4507787511674879,
+          0.5533029367856078,
+          0.667166961306341
+        ],
+        "lbp_weight": null,
+        "dropped": [
+          "otsu_separability",
+          "lbp_entropy"
+        ],
+        "pava_merges": []
+      },
+      "gate_enabled": true
+    },
+    "step6": {
+      "n": 661,
+      "params": "C:\\Users\\owlem\\Projects\\fov-filtering-tool\\crowding-crenation\\data\\results\\lbp-runtime\\density_overlap_v2.2-step6_params.json",
+      "density": {
+        "cv_mean_rho": 0.7828950295208487,
+        "oof_exact_match": 0.6944024205748865,
+        "oof_off_by_one": 0.9803328290468987,
+        "thresholds": [
+          0.29156415334234626,
+          0.44241468813409845,
+          0.5851453178781625,
+          0.7098841027662677
+        ],
+        "lbp_weight": 0.06446881390482326,
+        "dropped": [],
+        "pava_merges": []
+      },
+      "overlap": {
+        "cv_mean_rho": 0.7373217816510892,
+        "oof_exact_match": 0.6762481089258698,
+        "oof_off_by_one": 0.9379727685325264,
+        "thresholds": [
+          0.37380836070362045,
+          0.4507787511674879,
+          0.5533029367856078,
+          0.667166961306341
+        ],
+        "lbp_weight": null,
+        "dropped": [
+          "otsu_separability",
+          "lbp_entropy"
+        ],
+        "pava_merges": []
+      },
+      "gate_enabled": true
+    },
+    "step8": {
+      "n": 661,
+      "params": "C:\\Users\\owlem\\Projects\\fov-filtering-tool\\crowding-crenation\\data\\results\\lbp-runtime\\density_overlap_v2.2-step8_params.json",
+      "density": {
+        "cv_mean_rho": 0.7830683262880666,
+        "oof_exact_match": 0.6944024205748865,
+        "oof_off_by_one": 0.9803328290468987,
+        "thresholds": [
+          0.291819466492656,
+          0.44255057977998374,
+          0.5848798782176242,
+          0.7098136537242806
+        ],
+        "lbp_weight": 0.0650404422920794,
+        "dropped": [],
+        "pava_merges": []
+      },
+      "overlap": {
+        "cv_mean_rho": 0.7373217816510892,
+        "oof_exact_match": 0.6762481089258698,
+        "oof_off_by_one": 0.9379727685325264,
+        "thresholds": [
+          0.37380836070362045,
+          0.4507787511674879,
+          0.5533029367856078,
+          0.667166961306341
+        ],
+        "lbp_weight": null,
+        "dropped": [
+          "otsu_separability",
+          "lbp_entropy"
+        ],
+        "pava_merges": []
+      },
+      "gate_enabled": true
+    },
+    "step12": {
+      "n": 661,
+      "params": "C:\\Users\\owlem\\Projects\\fov-filtering-tool\\crowding-crenation\\data\\results\\lbp-runtime\\density_overlap_v2.2-step12_params.json",
+      "density": {
+        "cv_mean_rho": 0.7829490004729136,
+        "oof_exact_match": 0.6944024205748865,
+        "oof_off_by_one": 0.9803328290468987,
+        "thresholds": [
+          0.29194931509231203,
+          0.4427912296218349,
+          0.5853192853105407,
+          0.7099084311825932
+        ],
+        "lbp_weight": 0.06525045354909335,
+        "dropped": [],
+        "pava_merges": []
+      },
+      "overlap": {
+        "cv_mean_rho": 0.7373217816510892,
+        "oof_exact_match": 0.6762481089258698,
+        "oof_off_by_one": 0.9379727685325264,
+        "thresholds": [
+          0.37380836070362045,
+          0.4507787511674879,
+          0.5533029367856078,
+          0.667166961306341
+        ],
+        "lbp_weight": null,
+        "dropped": [
+          "otsu_separability",
+          "lbp_entropy"
+        ],
+        "pava_merges": []
+      },
+      "gate_enabled": true
+    },
+    "step16": {
+      "n": 661,
+      "params": "C:\\Users\\owlem\\Projects\\fov-filtering-tool\\crowding-crenation\\data\\results\\lbp-runtime\\density_overlap_v2.2-step16_params.json",
+      "density": {
+        "cv_mean_rho": 0.7828576547897254,
+        "oof_exact_match": 0.6944024205748865,
+        "oof_off_by_one": 0.9803328290468987,
+        "thresholds": [
+          0.291560229761074,
+          0.44219830334161275,
+          0.584420887140169,
+          0.7095541402230324
+        ],
+        "lbp_weight": 0.06408484840040257,
+        "dropped": [],
+        "pava_merges": []
+      },
+      "overlap": {
+        "cv_mean_rho": 0.7373217816510892,
+        "oof_exact_match": 0.6762481089258698,
+        "oof_off_by_one": 0.9379727685325264,
+        "thresholds": [
+          0.37380836070362045,
+          0.4507787511674879,
+          0.5533029367856078,
+          0.667166961306341
+        ],
+        "lbp_weight": null,
+        "dropped": [
+          "otsu_separability",
+          "lbp_entropy"
+        ],
+        "pava_merges": []
+      },
+      "gate_enabled": true
+    },
+    "step24": {
+      "n": 661,
+      "params": "C:\\Users\\owlem\\Projects\\fov-filtering-tool\\crowding-crenation\\data\\results\\lbp-runtime\\density_overlap_v2.2-step24_params.json",
+      "density": {
+        "cv_mean_rho": 0.7829485238694767,
+        "oof_exact_match": 0.6944024205748865,
+        "oof_off_by_one": 0.9803328290468987,
+        "thresholds": [
+          0.2920077928246396,
+          0.44251865008379054,
+          0.584872857677132,
+          0.7100489591211459
+        ],
+        "lbp_weight": 0.06479327755173955,
+        "dropped": [],
+        "pava_merges": []
+      },
+      "overlap": {
+        "cv_mean_rho": 0.7373217816510892,
+        "oof_exact_match": 0.6762481089258698,
+        "oof_off_by_one": 0.9379727685325264,
+        "thresholds": [
+          0.37380836070362045,
+          0.4507787511674879,
+          0.5533029367856078,
+          0.667166961306341
+        ],
+        "lbp_weight": null,
+        "dropped": [
+          "otsu_separability",
+          "lbp_entropy"
+        ],
+        "pava_merges": []
+      },
+      "gate_enabled": true
+    },
+    "step32": {
+      "n": 661,
+      "params": "C:\\Users\\owlem\\Projects\\fov-filtering-tool\\crowding-crenation\\data\\results\\lbp-runtime\\density_overlap_v2.2-step32_params.json",
+      "density": {
+        "cv_mean_rho": 0.7826169891969643,
+        "oof_exact_match": 0.6959152798789713,
+        "oof_off_by_one": 0.9803328290468987,
+        "thresholds": [
+          0.2918497381264523,
+          0.44234955857501773,
+          0.584483242348502,
+          0.7096929744907416
+        ],
+        "lbp_weight": 0.05694379813030362,
+        "dropped": [],
+        "pava_merges": []
+      },
+      "overlap": {
+        "cv_mean_rho": 0.7373217816510892,
+        "oof_exact_match": 0.6762481089258698,
+        "oof_off_by_one": 0.9379727685325264,
+        "thresholds": [
+          0.37380836070362045,
+          0.4507787511674879,
+          0.5533029367856078,
+          0.667166961306341
+        ],
+        "lbp_weight": null,
+        "dropped": [
+          "otsu_separability",
+          "lbp_entropy"
+        ],
+        "pava_merges": []
+      },
+      "gate_enabled": true
+    },
+    "step48": {
+      "n": 661,
+      "params": "C:\\Users\\owlem\\Projects\\fov-filtering-tool\\crowding-crenation\\data\\results\\lbp-runtime\\density_overlap_v2.2-step48_params.json",
+      "density": {
+        "cv_mean_rho": 0.7823261565098875,
+        "oof_exact_match": 0.6944024205748865,
+        "oof_off_by_one": 0.9803328290468987,
+        "thresholds": [
+          0.2915289855809595,
+          0.44166505872718137,
+          0.5845467723171727,
+          0.7101613688235281
+        ],
+        "lbp_weight": 0.06065568994401977,
+        "dropped": [],
+        "pava_merges": []
+      },
+      "overlap": {
+        "cv_mean_rho": 0.7373217816510892,
+        "oof_exact_match": 0.6762481089258698,
+        "oof_off_by_one": 0.9379727685325264,
+        "thresholds": [
+          0.37380836070362045,
+          0.4507787511674879,
+          0.5533029367856078,
+          0.667166961306341
+        ],
+        "lbp_weight": null,
+        "dropped": [
+          "otsu_separability",
+          "lbp_entropy"
+        ],
+        "pava_merges": []
+      },
+      "gate_enabled": true
+    },
+    "step64": {
+      "n": 661,
+      "params": "C:\\Users\\owlem\\Projects\\fov-filtering-tool\\crowding-crenation\\data\\results\\lbp-runtime\\density_overlap_v2.2-step64_params.json",
+      "density": {
+        "cv_mean_rho": 0.7828283128025327,
+        "oof_exact_match": 0.6913767019667171,
+        "oof_off_by_one": 0.9818456883509834,
+        "thresholds": [
+          0.2910822442992053,
+          0.44102741073496277,
+          0.583938768492615,
+          0.7102723752699273
+        ],
+        "lbp_weight": 0.05607952278379515,
+        "dropped": [],
+        "pava_merges": []
+      },
+      "overlap": {
+        "cv_mean_rho": 0.7373217816510892,
+        "oof_exact_match": 0.6762481089258698,
+        "oof_off_by_one": 0.9379727685325264,
+        "thresholds": [
+          0.37380836070362045,
+          0.4507787511674879,
+          0.5533029367856078,
+          0.667166961306341
+        ],
+        "lbp_weight": null,
+        "dropped": [
+          "otsu_separability",
+          "lbp_entropy"
+        ],
+        "pava_merges": []
+      },
+      "gate_enabled": true
+    },
+    "step96": {
+      "n": 661,
+      "params": "C:\\Users\\owlem\\Projects\\fov-filtering-tool\\crowding-crenation\\data\\results\\lbp-runtime\\density_overlap_v2.2-step96_params.json",
+      "density": {
+        "cv_mean_rho": 0.7817695772905159,
+        "oof_exact_match": 0.697428139183056,
+        "oof_off_by_one": 0.9803328290468987,
+        "thresholds": [
+          0.28865083312321327,
+          0.4388546205894364,
+          0.5835281452201604,
+          0.7100120939581599
+        ],
+        "lbp_weight": 0.037296371930136685,
+        "dropped": [],
+        "pava_merges": []
+      },
+      "overlap": {
+        "cv_mean_rho": 0.7373217816510892,
+        "oof_exact_match": 0.6762481089258698,
+        "oof_off_by_one": 0.9379727685325264,
+        "thresholds": [
+          0.37380836070362045,
+          0.4507787511674879,
+          0.5533029367856078,
+          0.667166961306341
+        ],
+        "lbp_weight": null,
+        "dropped": [
+          "lbp_entropy",
+          "otsu_separability"
+        ],
+        "pava_merges": []
+      },
+      "gate_enabled": true
+    },
+    "nolbp": {
+      "n": 661,
+      "params": "C:\\Users\\owlem\\Projects\\fov-filtering-tool\\crowding-crenation\\data\\results\\lbp-runtime\\density_overlap_v2.2-nolbp_params.json",
+      "density": {
+        "cv_mean_rho": 0.7822495473642871,
+        "oof_exact_match": 0.6959152798789713,
+        "oof_off_by_one": 0.9818456883509834,
+        "thresholds": [
+          0.28331048943406895,
+          0.43322761743848914,
+          0.5808339406855346,
+          0.7085519289677507
+        ],
+        "lbp_weight": null,
+        "dropped": [],
+        "pava_merges": []
+      },
+      "overlap": {
+        "cv_mean_rho": 0.7373217816510892,
+        "oof_exact_match": 0.6762481089258698,
+        "oof_off_by_one": 0.9379727685325264,
+        "thresholds": [
+          0.37380836070362045,
+          0.4507787511674879,
+          0.5533029367856078,
+          0.667166961306341
+        ],
+        "lbp_weight": null,
+        "dropped": [
+          "otsu_separability"
+        ],
+        "pava_merges": []
+      },
+      "gate_enabled": false,
+      "gate3_params": "C:\\Users\\owlem\\Projects\\fov-filtering-tool\\crowding-crenation\\data\\results\\lbp-runtime\\density_overlap_v2.2-nolbp-gate3_params.json"
+    }
+  }
+}

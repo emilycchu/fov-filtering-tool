@@ -10,3 +10,13 @@ focus/data/raw/
 __pycache__/
 *.pyc
 .venv/
+
+# Derived per-variant feature CSVs: features-v2.2.csv with only the lbp_entropy column
+# swapped. 2.6 MB of duplication that build_variant_features.py regenerates in seconds from
+# the committed lbp-variants.csv.
+crowding-crenation/data/results/lbp-runtime/features-v2.2-step*.csv
+
+# Nigeria FOV thumbnail sheets for the LBP variants: the same 8 images already committed
+# for v2.2, differing only in the predicted-bucket captions. 3.3 MB each; nigeria_081226.py
+# regenerates them, and the finding they support is a table in lbp-runtime/README.md.
+crowding-crenation/data/results/nigeria-081226/fov-thumbnails-nolbp*.png

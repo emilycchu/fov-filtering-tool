@@ -296,6 +296,14 @@ def plot_feature_ood(rows, calib_rows, ranges, out_path):
 
     for ax, name in zip(axes.ravel(), FEATURE_ORDER):
         _style(ax)
+        if name not in ranges:
+            # A params file fit without this feature has no band to plot against. Say so in
+            # the panel rather than dropping it silently -- the empty panel is the finding.
+            # (Matches build_ood_rows, which already skips unnormalized features.)
+            ax.set_title(f"{name}\nnot in this fit", fontsize=9, color=COLOR_MUTED)
+            ax.set_xticks([])
+            ax.set_yticks([])
+            continue
         calib_vals = np.array([float(r[name]) for r in calib_rows])
         nig_vals = np.array([r[name] for r in rows])
         lo, hi = ranges[name]
@@ -461,8 +469,9 @@ def main():
                   f"  model=({r['density_label']}, {r['overlap_label']})")
 
     if gated:
+        n_gate = len(params["empty_field_override"]["thresholds"])
         print(f"\nEmpty-field gate fired on {len(gated)}/{len(rows)} FOVs "
-              "(all 4 texture features below their calibration p2 floor):")
+              f"(all {n_gate} texture features below their calibration p2 floor):")
         for r in gated:
             print(f"  {r['filename']:<40} composite said "
                   f"({r['raw_density_label']}, {r['raw_overlap_label']}) -> forced "
@@ -475,6 +484,9 @@ def main():
 
     print("\nOut-of-range features (value outside the 2nd-98th percentile calibration band):")
     for name in FEATURE_ORDER:
+        if name not in ranges:
+            print(f"  {name:<24} not in this fit -- no calibration band")
+            continue
         lo, hi = ranges[name]
         vals = np.array([r[name] for r in rows])
         n_over, n_under = int((vals > hi).sum()), int((vals < lo).sum())

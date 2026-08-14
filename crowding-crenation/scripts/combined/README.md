@@ -251,7 +251,26 @@ check_empty_field_gate.py  assert the empty-field gate is a no-op on the calibra
 score_fov_v2.py            inference: score a new image/directory with a params JSON
 plot_results_v2.py         density/Rouleaux/density-vs-Rouleaux scatter plots
 plot_bucket_comparison_v2.py  manual-vs-model bucket-grid comparison plot
+
+bench_lbp.py               LBP: assert the fast kernel is bit-identical to skimage; time it
+extract_lbp_variants.py    LBP: entropy at every candidate stride, one pass over 661 FOVs
+build_variant_features.py  LBP: patch only the lbp_entropy column per variant
+compare_lbp_variants.py    LBP: fixed-params + refit comparison of every variant vs. v2.2
+plot_lbp_variants.py       LBP: the runtime/accuracy tradeoff figure
 ```
+
+## LBP runtime (`bench_lbp.py` and friends)
+
+`lbp_entropy` was 82% of `compute_features`' cost. `src/features/lbp_entropy.py` now computes
+it as tiled, threaded numpy instead of skimage's per-pixel Cython loop: **2.6x faster and
+bit-identical**, which `bench_lbp.py` asserts (add `--full-set` to check all 661 calibration
+rows against `features-v2.2.csv`). Nothing about the fit or the feature vector changed.
+
+The same kernel takes a `step` argument that subsamples the *centre* grid — 71x at stride-16,
+with zero label changes across all 661 FOVs — and dropping the feature entirely costs nothing
+in-distribution but disables the empty-field gate. **Neither is wired in**; `compute_features`
+and `EMPTY_FIELD_FEATURES` are unchanged. The measurements, the per-variant params JSONs, and
+the recommendation live in `data/results/lbp-runtime/README.md`.
 
 The sibling from-scratch watershed pipeline lives in `scripts/ai-first/` instead:
 

@@ -86,10 +86,12 @@ def main():
     if len(fired) != args.expect_fired:
         failures.append(f"expected the gate to fire on {args.expect_fired} FOVs, got {len(fired)}")
 
-    # near-misses: 3 of 4 below floor. Not an error -- the margin between the gate and the
-    # rest of the set is the thing worth watching, since 3-of-4 does catch a true monolayer.
-    near = [r for r in rows if len(empty_field_features_below(r, cfg)) == len(cfg["thresholds"]) - 1]
-    print(f"\n{len(near)} FOVs are one feature short of firing (3 of 4 below floor):")
+    # near-misses: one short of the full set below floor. Not an error -- the margin between
+    # the gate and the rest of the set is the thing worth watching, since a rule one feature
+    # weaker than v2.2's does catch a true monolayer.
+    n_gate = len(cfg["thresholds"])
+    near = [r for r in rows if len(empty_field_features_below(r, cfg)) == n_gate - 1]
+    print(f"\n{len(near)} FOVs are one feature short of firing ({n_gate - 1} of {n_gate} below floor):")
     for r in near:
         held = [n for n in cfg["thresholds"] if n not in empty_field_features_below(r, cfg)]
         print(f"  {r['filename']:<38} manual=({r['density_label']}, {r['overlap_label']})"
