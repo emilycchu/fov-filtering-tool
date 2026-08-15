@@ -15,7 +15,14 @@ import json
 from multiprocessing import Pool
 from pathlib import Path
 
-from _v2_common import PARAMS_JSON, apply_label_overrides, compute_features, list_image_paths, load_image
+from _v2_common import (
+    PARAMS_JSON,
+    apply_label_overrides,
+    compute_features,
+    lbp_step_from_params,
+    list_image_paths,
+    load_image,
+)
 from src.composite_v2 import bucket, weighted_composite
 
 
@@ -34,7 +41,9 @@ def _score_axis(features, axis_params):
 
 def score_image_v2(path, params):
     image = load_image(path)
-    features = compute_features(image)
+    # The stride comes from the params file, never from a local default -- a fit made on
+    # subsampled LBP entropy has to be scored the same way.
+    features = compute_features(image, lbp_step=lbp_step_from_params(params))
 
     density_score, density_label = _score_axis(features, params["density"])
     overlap_score, overlap_label = _score_axis(features, params["overlap"])

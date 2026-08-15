@@ -16,6 +16,7 @@ from scipy.stats import binomtest, spearmanr
 
 from _v2_common import (
     AXIS_DISPLAY_NAMES,
+    DEFAULT_LBP_STEP,
     DENSITY_LEVELS,
     EMPTY_FIELD_FEATURES,
     FEATURES_CSV,
@@ -299,6 +300,15 @@ def axis_separation_check(rows, oof_density_idx, oof_overlap_idx, min_delta=2):
             "p_value": p_value, "spearman_rho": rho, "qualitative_rows": qualitative}
 
 
+def composite_independence(density_result, overlap_result, rho_do):
+    """How correlated the two fitted composites are, against how correlated the manual labels
+    actually are. Lives here rather than in a calibrate_v2.<N>.py because those filenames are
+    not importable (the dot makes them invalid module names), so every refit script that wants
+    it would otherwise have to restate it."""
+    rho, _ = spearmanr(density_result["full_raw_score"], overlap_result["full_raw_score"])
+    return {"composite_rho": float(rho), "manual_label_rho": float(rho_do)}
+
+
 def dataset_feature_summary(rows, feature_names):
     """Median of each feature by source dataset -- a coarse cross-slide/cross-stain check.
     Raw pixel/intensity features (coverage, GLCM contrast, edge density) are sensitive to
@@ -380,7 +390,9 @@ def empty_field_block(density_result):
     }
 
 
-def write_params_json(out_path, density_result, overlap_result, n_fovs):
+def write_params_json(out_path, density_result, overlap_result, n_fovs, lbp_step=DEFAULT_LBP_STEP):
+    """`lbp_step` is recorded, not just used: score_fov_v2.py reads it back so a fit made on
+    subsampled LBP entropy can only ever be scored against subsampled LBP entropy."""
     def axis_block(res, levels):
         return {
             "feature_names": res["feature_names"],
@@ -394,6 +406,7 @@ def write_params_json(out_path, density_result, overlap_result, n_fovs):
         "version": "v2",
         "generated_from": "data/results/density-rouleaux-v2/features.csv",
         "n_fovs": n_fovs,
+        "lbp_step": lbp_step,
         "density": axis_block(density_result, DENSITY_LEVELS),
         "overlap": axis_block(overlap_result, OVERLAP_LEVELS),
         "saturation_override": {

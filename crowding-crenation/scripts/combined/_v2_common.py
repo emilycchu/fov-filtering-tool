@@ -6,6 +6,13 @@ compute_features() is the single source of truth for turning an image into the f
 vector both calibration (extract_features_v2.py) and inference (score_fov_v2.py) consume --
 importing it from here in both places guarantees they can never drift apart.
 
+`lbp_step` is the one knob that can still break that guarantee, since a composite fit on
+stride-16 LBP entropy must be scored with stride-16 LBP entropy. It is therefore not a free
+parameter: calibration records the stride it used in the params JSON, and every inference
+path reads it back from there (`lbp_step_from_params`). The default is 1 -- full resolution,
+exactly what v2/v2.1/v2.2 were fit on -- so a params file that predates this knob scores the
+way it always did.
+
 The "overlap" axis is internally named "overlap" (matching the source label CSVs' column
 name and the existing repo convention), but is always displayed to the user as "Rouleaux"
 (see AXIS_DISPLAY_NAMES / display_level) per project convention for this tool.
@@ -49,6 +56,12 @@ NIGERIA_IMAGE_DIR = ROOT / "data" / "raw" / "nigeria-081226"
 RESULTS_DIR = ROOT / "data" / "results" / "density-rouleaux-v2"
 MERGED_LABELS_CSV = RESULTS_DIR / "merged-labels.csv"
 FEATURES_CSV = RESULTS_DIR / "features.csv"
+
+# LBP runtime study (bench_lbp.py -> extract_lbp_variants.py -> build_variant_features.py ->
+# compare_lbp_variants.py). Separate results dir so nothing here can overwrite the v2.2 fit.
+LBP_RUNTIME_DIR = ROOT / "data" / "results" / "lbp-runtime"
+LBP_VARIANTS_CSV = LBP_RUNTIME_DIR / "lbp-variants.csv"
+LBP_COMPARISON_CSV = LBP_RUNTIME_DIR / "variant-comparison.csv"
 PARAMS_JSON = RESULTS_DIR / "density_overlap_v2_params.json"
 REPORT_MD = RESULTS_DIR / "calibration-report.md"
 PLOTS_DIR = RESULTS_DIR / "plots"
@@ -82,6 +95,14 @@ OVERLAP_TAGS = {
 # tile-grid feature parameters (see src/features/tile_heterogeneity.py)
 TILE_GRID_SIZE = 7
 TILE_GLCM_LEVELS = 32
+
+# LBP centre-grid stride. 1 = full resolution, what v2/v2.1/v2.2 were fit on.
+DEFAULT_LBP_STEP = 1
+# The validated fast stride: 71x faster than full resolution (0.07s vs 4.80s per FOV) and,
+# measured across all 661 v2.2 calibration FOVs, it changes none of the 1322 bucket
+# assignments. Going further saves nothing -- correct_illumination's 301px blur becomes the
+# bottleneck at this point. See data/results/lbp-runtime/README.md.
+LBP_OPTIMIZED_STEP = 16
 
 # dataviz palette (references/palette.md), matching scripts/tanzania_comparison.py
 JITTER_SEED = 7
@@ -140,11 +161,25 @@ def write_csv_dicts(path, fieldnames, rows):
         writer.writerows(rows)
 
 
-def compute_features(image):
+def lbp_step_from_params(params):
+    """The LBP stride a params file was fit with.
+
+    Absent means the fit predates the knob (v2, v2.1, v2.2), which means full resolution.
+    Inference paths must call this rather than assuming a default, or a stride-16 fit gets
+    scored against full-resolution features.
+    """
+    return int(params.get("lbp_step", DEFAULT_LBP_STEP))
+
+
+def compute_features(image, lbp_step=DEFAULT_LBP_STEP):
     """The full candidate feature vector for one FOV image (BGR, as returned by load_image).
 
     Shared by extract_features_v2.py (calibration) and score_fov_v2.py (inference) so the
     two can never compute features differently.
+
+    `lbp_step` > 1 evaluates LBP on a subsampled centre grid -- much faster, and the only
+    feature it changes is lbp_entropy (see src/features/lbp_entropy.py). Pass it from the
+    params JSON via lbp_step_from_params() at inference time; do not hardcode it.
     """
     gray = to_grayscale(image)
     mask, otsu_threshold = otsu_segment(image)
@@ -165,7 +200,7 @@ def compute_features(image):
         "otsu_threshold": float(otsu_threshold),
         "otsu_separability": eta,
         "saturation_score": saturation_score,
-        "lbp_entropy": lbp_entropy(image),
+        "lbp_entropy": lbp_entropy(image, step=lbp_step),
         "glcm_contrast": glcm_contrast(image),
         "edge_density_unmasked": edge_density(image),
         "tile_glcm_cv": coefficient_of_variation(tile_contrasts),

@@ -65,6 +65,7 @@ from _v2_common import (  # noqa: E402
     OVERLAP_LEVELS,
     apply_label_overrides,
     compute_features,
+    lbp_step_from_params,
     density_ordinal,
     display_level,
     empty_field_fired,
@@ -114,8 +115,9 @@ def load_manual_labels(path=NIGERIA_LABELS_CSV):
 
 # --- scoring -----------------------------------------------------------------------------
 
-def _extract_one(path):
-    features = compute_features(load_image(path))
+def _extract_one(args):
+    path, lbp_step = args
+    features = compute_features(load_image(path), lbp_step=lbp_step)
     features["filename"] = Path(str(path)).name
     return features
 
@@ -127,11 +129,14 @@ def score_axis(features, axis_params):
 
 
 def score_all(paths, params, workers, manual=None):
+    # The LBP stride comes from the params file, so a stride-16 fit is scored on stride-16
+    # features and an older full-resolution fit is unaffected.
+    jobs = [(p, lbp_step_from_params(params)) for p in paths]
     if workers > 1:
         with Pool(workers) as pool:
-            rows = pool.map(_extract_one, paths)
+            rows = pool.map(_extract_one, jobs)
     else:
-        rows = [_extract_one(p) for p in paths]
+        rows = [_extract_one(j) for j in jobs]
 
     manual = manual or {}
     for r in rows:
@@ -296,6 +301,14 @@ def plot_feature_ood(rows, calib_rows, ranges, out_path):
 
     for ax, name in zip(axes.ravel(), FEATURE_ORDER):
         _style(ax)
+        if name not in ranges:
+            # A params file fit without this feature has no band to plot against. Say so in
+            # the panel rather than dropping it silently -- the empty panel is the finding.
+            # (Matches build_ood_rows, which already skips unnormalized features.)
+            ax.set_title(f"{name}\nnot in this fit", fontsize=9, color=COLOR_MUTED)
+            ax.set_xticks([])
+            ax.set_yticks([])
+            continue
         calib_vals = np.array([float(r[name]) for r in calib_rows])
         nig_vals = np.array([r[name] for r in rows])
         lo, hi = ranges[name]
@@ -461,8 +474,9 @@ def main():
                   f"  model=({r['density_label']}, {r['overlap_label']})")
 
     if gated:
+        n_gate = len(params["empty_field_override"]["thresholds"])
         print(f"\nEmpty-field gate fired on {len(gated)}/{len(rows)} FOVs "
-              "(all 4 texture features below their calibration p2 floor):")
+              f"(all {n_gate} texture features below their calibration p2 floor):")
         for r in gated:
             print(f"  {r['filename']:<40} composite said "
                   f"({r['raw_density_label']}, {r['raw_overlap_label']}) -> forced "
@@ -475,6 +489,9 @@ def main():
 
     print("\nOut-of-range features (value outside the 2nd-98th percentile calibration band):")
     for name in FEATURE_ORDER:
+        if name not in ranges:
+            print(f"  {name:<24} not in this fit -- no calibration band")
+            continue
         lo, hi = ranges[name]
         vals = np.array([r[name] for r in rows])
         n_over, n_under = int((vals > hi).sum()), int((vals < lo).sum())

@@ -58,6 +58,12 @@ def main():
     parser.add_argument("--params", default=str(DEFAULT_PARAMS))
     parser.add_argument("--expect-fired", type=int, default=EXPECTED_FIRED,
                         help="expected number of gated FOVs; pass a new value after a refit")
+    parser.add_argument("--expect-exact", type=float, nargs=2, metavar=("DENSITY", "OVERLAP"),
+                        default=(EXPECTED_EXACT["density"], EXPECTED_EXACT["overlap"]),
+                        help="expected gated exact-match per axis. Defaults to the v2.2 "
+                             "baselines; a refit legitimately moves them (v2.2-lb-optimized "
+                             "is 0.6959 / 0.6838), so pass its own numbers rather than "
+                             "reading a spurious failure as a broken gate")
     args = parser.parse_args()
 
     rows = read_csv_dicts(args.features)
@@ -86,10 +92,12 @@ def main():
     if len(fired) != args.expect_fired:
         failures.append(f"expected the gate to fire on {args.expect_fired} FOVs, got {len(fired)}")
 
-    # near-misses: 3 of 4 below floor. Not an error -- the margin between the gate and the
-    # rest of the set is the thing worth watching, since 3-of-4 does catch a true monolayer.
-    near = [r for r in rows if len(empty_field_features_below(r, cfg)) == len(cfg["thresholds"]) - 1]
-    print(f"\n{len(near)} FOVs are one feature short of firing (3 of 4 below floor):")
+    # near-misses: one short of the full set below floor. Not an error -- the margin between
+    # the gate and the rest of the set is the thing worth watching, since a rule one feature
+    # weaker than v2.2's does catch a true monolayer.
+    n_gate = len(cfg["thresholds"])
+    near = [r for r in rows if len(empty_field_features_below(r, cfg)) == n_gate - 1]
+    print(f"\n{len(near)} FOVs are one feature short of firing ({n_gate - 1} of {n_gate} below floor):")
     for r in near:
         held = [n for n in cfg["thresholds"] if n not in empty_field_features_below(r, cfg)]
         print(f"  {r['filename']:<38} manual=({r['density_label']}, {r['overlap_label']})"
@@ -110,9 +118,9 @@ def main():
         print(f"{axis:<8} exact-match  ungated={ungated / len(rows):.4f}  gated={gated / len(rows):.4f}{flag}")
         if ungated != gated:
             failures.append(f"{axis}: gate changed {abs(gated - ungated)} in-distribution predictions")
-        expected = EXPECTED_EXACT[axis]
+        expected = args.expect_exact[0] if axis == "density" else args.expect_exact[1]
         if abs(counts[axis][1] - expected) > 5e-5:
-            failures.append(f"{axis}: exact-match {counts[axis][1]:.4f} != the recorded v2.2 baseline {expected}")
+            failures.append(f"{axis}: exact-match {counts[axis][1]:.4f} != the expected baseline {expected}")
 
     # incomplete input must fail the gate rather than trip it -- it forces the bottom bucket
     if fired:
