@@ -58,6 +58,12 @@ def main():
     parser.add_argument("--params", default=str(DEFAULT_PARAMS))
     parser.add_argument("--expect-fired", type=int, default=EXPECTED_FIRED,
                         help="expected number of gated FOVs; pass a new value after a refit")
+    parser.add_argument("--expect-exact", type=float, nargs=2, metavar=("DENSITY", "OVERLAP"),
+                        default=(EXPECTED_EXACT["density"], EXPECTED_EXACT["overlap"]),
+                        help="expected gated exact-match per axis. Defaults to the v2.2 "
+                             "baselines; a refit legitimately moves them (v2.2-lb-optimized "
+                             "is 0.6959 / 0.6838), so pass its own numbers rather than "
+                             "reading a spurious failure as a broken gate")
     args = parser.parse_args()
 
     rows = read_csv_dicts(args.features)
@@ -112,9 +118,9 @@ def main():
         print(f"{axis:<8} exact-match  ungated={ungated / len(rows):.4f}  gated={gated / len(rows):.4f}{flag}")
         if ungated != gated:
             failures.append(f"{axis}: gate changed {abs(gated - ungated)} in-distribution predictions")
-        expected = EXPECTED_EXACT[axis]
+        expected = args.expect_exact[0] if axis == "density" else args.expect_exact[1]
         if abs(counts[axis][1] - expected) > 5e-5:
-            failures.append(f"{axis}: exact-match {counts[axis][1]:.4f} != the recorded v2.2 baseline {expected}")
+            failures.append(f"{axis}: exact-match {counts[axis][1]:.4f} != the expected baseline {expected}")
 
     # incomplete input must fail the gate rather than trip it -- it forces the bottom bucket
     if fired:

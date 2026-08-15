@@ -3,12 +3,26 @@ set (see merge_labels_v2.py), joined against its manual labels.
 
 Usage:
     python scripts/combined/extract_features_v2.py [--labels-csv PATH] [--out PATH]
-        [--workers N] [--limit N]
+        [--workers N] [--limit N] [--lbp-step N]
+
+--lbp-step defaults to 1 (full resolution), so re-running this reproduces the v2/v2.1/v2.2
+feature CSVs exactly. Pass --lbp-step 16 to build the LBP-optimized set; whichever value is
+used must then be recorded in the params JSON by the calibration script, because
+score_fov_v2.py reads it back to score with the same stride.
 """
 import argparse
+from functools import partial
 from multiprocessing import Pool
 
-from _v2_common import FEATURES_CSV, MERGED_LABELS_CSV, compute_features, load_image, read_csv_dicts, write_csv_dicts
+from _v2_common import (
+    DEFAULT_LBP_STEP,
+    FEATURES_CSV,
+    MERGED_LABELS_CSV,
+    compute_features,
+    load_image,
+    read_csv_dicts,
+    write_csv_dicts,
+)
 
 FEATURE_NAMES = [
     "coverage", "otsu_threshold", "otsu_separability", "saturation_score",
@@ -20,9 +34,9 @@ LABEL_FIELDNAMES = ["fov_key", "dataset", "filename", "image_path", "density_lab
 FIELDNAMES = LABEL_FIELDNAMES + FEATURE_NAMES
 
 
-def _score_one(row):
+def _score_one(row, lbp_step=DEFAULT_LBP_STEP):
     image = load_image(row["image_path"])
-    features = compute_features(image)
+    features = compute_features(image, lbp_step=lbp_step)
     return {**row, **features}
 
 
@@ -32,6 +46,8 @@ def main():
     parser.add_argument("--out", default=str(FEATURES_CSV))
     parser.add_argument("--workers", type=int, default=8)
     parser.add_argument("--limit", type=int, default=None)
+    parser.add_argument("--lbp-step", type=int, default=DEFAULT_LBP_STEP,
+                        help="LBP centre-grid stride; 1 (default) reproduces v2/v2.1/v2.2")
     args = parser.parse_args()
 
     rows = read_csv_dicts(args.labels_csv)
@@ -39,10 +55,10 @@ def main():
         rows = rows[: args.limit]
 
     with Pool(args.workers) as pool:
-        results = pool.map(_score_one, rows)
+        results = pool.map(partial(_score_one, lbp_step=args.lbp_step), rows)
 
     write_csv_dicts(args.out, FIELDNAMES, results)
-    print(f"wrote {len(results)} rows to {args.out}")
+    print(f"wrote {len(results)} rows to {args.out} (lbp_step={args.lbp_step})")
 
 
 if __name__ == "__main__":

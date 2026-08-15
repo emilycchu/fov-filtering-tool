@@ -247,6 +247,7 @@ extract_features_v2.py    compute_features() over the merged set -> features.csv
 calibrate_v2.py            v2: axis-exclusive partial-correlation selection + ridge + PAVA
 calibrate_v2.1.py          v2.1: full-feature-pool refit, same 337 FOVs
 calibrate_v2.2.py          v2.2: full-feature-pool refit, pooled to 661 FOVs
+calibrate_v2.2-lb-optimized.py  v2.2 refit on stride-16 LBP entropy (5.7x faster per FOV)
 check_empty_field_gate.py  assert the empty-field gate is a no-op on the calibration set
 score_fov_v2.py            inference: score a new image/directory with a params JSON
 plot_results_v2.py         density/Rouleaux/density-vs-Rouleaux scatter plots
@@ -267,10 +268,39 @@ bit-identical**, which `bench_lbp.py` asserts (add `--full-set` to check all 661
 rows against `features-v2.2.csv`). Nothing about the fit or the feature vector changed.
 
 The same kernel takes a `step` argument that subsamples the *centre* grid — 71x at stride-16,
-with zero label changes across all 661 FOVs — and dropping the feature entirely costs nothing
-in-distribution but disables the empty-field gate. **Neither is wired in**; `compute_features`
-and `EMPTY_FIELD_FEATURES` are unchanged. The measurements, the per-variant params JSONs, and
-the recommendation live in `data/results/lbp-runtime/README.md`.
+with zero label changes across all 661 FOVs. Dropping the feature entirely also costs nothing
+in-distribution, but disables the empty-field gate (Nigeria 8/8 → 6/8), so it was **not**
+adopted: `EMPTY_FIELD_FEATURES` still lists all four features. The measurements, the
+per-variant params JSONs, and the reasoning live in `data/results/lbp-runtime/README.md`.
+
+### `lbp_step` and v2.2-lb-optimized
+
+`compute_features(image, lbp_step=1)` takes the stride, and **stride-16 is calibrated as
+`v2.2-lb-optimized`** — same 661 FOVs, same procedure, `compute_features` down from 5.85s to
+1.03s per FOV (5.7x):
+
+| | v2.2 | v2.2-lb-optimized |
+|---|---|---|
+| `compute_features` per FOV | 5.85 s | **1.03 s** |
+| density OOF exact / off-by-one | 69.4% / 98.0% | 69.4% / 98.0% |
+| Rouleaux OOF exact / off-by-one | 67.6% / 93.8% | 67.6% / 93.8% |
+| in-sample label differences | — | 1 of 661 (a knife-edge FOV) |
+| empty-field gate | 3 FOVs, no-op | 3 FOVs, no-op |
+
+`lbp_step` is the one parameter that can break `compute_features`' "calibration and inference
+can never differ" guarantee, since a fit made on stride-16 entropy must be scored on stride-16
+entropy. So it is **not a free knob**: calibration records it in the params JSON, and every
+inference path reads it back with `lbp_step_from_params()`. It defaults to 1, so v2/v2.1/v2.2
+params — which have no `lbp_step` key — score at full resolution exactly as before. Never
+hardcode it at a call site.
+
+`extract_features_v2.py --lbp-step` also defaults to 1, so re-running it still reproduces the
+older feature CSVs; the optimized set was built with `--lbp-step 16`.
+
+The single in-sample difference is `dpc-176-KTR-72502946.png` (manual: dense), and it is a
+threshold artifact rather than a feature one: its composite score moved by −0.00006 while the
+dense/very-dense threshold moved down 0.00135, leaving it 0.0001 above instead of 0.0012
+below. Under v2.2's *own* params, stride-16 features flip nothing at all.
 
 The sibling from-scratch watershed pipeline lives in `scripts/ai-first/` instead:
 

@@ -29,6 +29,7 @@ from calibrate_v2 import (
     _fmt_conf,
     axis_separation_check,
     calibrate_axis,
+    composite_independence,
     correlation_table,
     load_features,
     write_params_json,
@@ -38,11 +39,6 @@ FEATURES_CSV_V2_2 = RESULTS_DIR / "features-v2.2.csv"
 PARAMS_JSON_V2_2 = RESULTS_DIR / "density_overlap_v2.2_params.json"
 PARAMS_JSON_V2_1 = RESULTS_DIR / "density_overlap_v2.1_params.json"
 REPORT_MD = RESULTS_DIR / "calibration-report.md"
-
-
-def composite_independence(density_result, overlap_result, rho_do):
-    rho, _ = spearmanr(density_result["full_raw_score"], overlap_result["full_raw_score"])
-    return {"composite_rho": float(rho), "manual_label_rho": float(rho_do)}
 
 
 def dataset_density_breakdown(rows):

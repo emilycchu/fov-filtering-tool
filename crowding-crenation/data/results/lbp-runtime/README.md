@@ -6,9 +6,13 @@ weight and **none** of the Rouleaux composite's. This directory is the measureme
 ways to make that cheaper, all on branch `lbp-runtime-optimization`, all against the full
 661-FOV v2.2 calibration set.
 
-**Only the bit-identical variant is wired into the pipeline.** The approximate strides and the
-no-LBP variant exist as feature CSVs and params JSONs here; `compute_features` and
-`EMPTY_FIELD_FEATURES` are unchanged, and no v2.2 artifact was overwritten.
+**Adopted:** the bit-identical exact kernel, and stride-16 as the calibrated fit
+**`v2.2-lb-optimized`** (`scripts/combined/calibrate_v2.2-lb-optimized.py`) — see "Adopted"
+at the bottom. `compute_features` now takes an `lbp_step`, recorded in the params JSON so
+inference can only ever score at the stride its fit used.
+
+**Not adopted:** removing LBP. `EMPTY_FIELD_FEATURES` still lists all four features, and no
+v2.2 artifact was overwritten — the no-LBP arm remains measurement only.
 
 ## Headline
 
@@ -173,18 +177,47 @@ So `lbp_entropy` was the *binding* condition holding the gate back on 4 truly-sp
 Enabling a 3-of-3 gate is a deliberate decision that `empty_field_block` refuses to make
 automatically, and it should stay that way — but the measurement says it is defensible here.
 
-## Recommendation
+## Adopted: v2.2-lb-optimized
 
-1. **Take the exact kernel unconditionally.** 2.6x for a bit-identical number is not a
-   tradeoff; `bench_lbp.py` is the standing proof.
-2. **If more is needed, take stride-16.** 71x, zero label changes on 661 FOVs, gate check
-   passes unchanged. Adopting it means adding a `step` argument to `compute_features` and
-   refitting to v2.3 — deliberately not done here.
-3. **Do not go past stride-16.** LBP is no longer the bottleneck there; further striding trades
-   labels for nothing.
-4. **Removing LBP is viable but is a bigger decision than a runtime one.** It saves 0.07 s over
-   stride-16 and needs the 3-of-3 gate enabled to hold Nigeria at 8/8. Worth revisiting at the
-   v2.3 refit, when the deferred 669-FOV set pools in the very FOVs the gate targets.
+Stride-16 is now a calibrated fit, not just a measurement. Same 661 FOVs, same candidate pool,
+same ridge/PAVA procedure as v2.2 — the only difference is that `lbp_entropy` is computed on a
+stride-16 centre grid.
+
+| | v2.2 | v2.2-lb-optimized |
+|---|---|---|
+| `compute_features` per FOV | 5.85 s | **1.03 s** (5.7x) |
+| density OOF exact / off-by-one | 69.4% / 98.0% | **69.4% / 98.0%** |
+| Rouleaux OOF exact / off-by-one | 67.6% / 93.8% | **67.6% / 93.8%** |
+| density CV mean rho | 0.783 | 0.783 |
+| in-sample exact-match (density) | 0.6974 | 0.6959 |
+| in-sample label differences | — | 1 of 661 |
+| empty-field gate | 3 FOVs, no-op | 3 FOVs, no-op |
+| composite independence rho | 0.972 | 0.972 |
+
+Two checks worth recording. Extracting the whole feature vector at `--lbp-step 16`
+reproduces the other **eight features bit-for-bit** across all 661 rows — only `lbp_entropy`
+moves, so the plumbing demonstrably touches nothing else. And the one in-sample label
+difference, `dpc-176-KTR-72502946.png` (manual: dense), is a threshold artifact rather than a
+feature one: its composite score moved by **−0.00006** while the dense/very-dense threshold
+moved down **0.00135**, leaving it 0.0001 *above* instead of 0.0012 *below*. Under v2.2's own
+params, stride-16 features flip nothing at all — so this FOV is on the knife edge either way,
+not evidence that the stride degraded anything.
+
+`lbp_step` is recorded in the params JSON and read back by `score_fov_v2.py` /
+`nigeria_081226.py` via `_v2_common.lbp_step_from_params()`. It defaults to 1, so v2/v2.1/v2.2
+params keep scoring at full resolution. This matters: a stride-16 fit scored against
+full-resolution features would be a silent mismatch, and `compute_features`' whole purpose is
+that calibration and inference cannot diverge.
+
+## The rest of the recommendation
+
+1. **Do not go past stride-16.** LBP is no longer the bottleneck there — `correct_illumination`'s
+   301-px blur is — so further striding trades labels for nothing.
+2. **Removing LBP stays unadopted.** It saves 0.07 s over stride-16 and needs the 3-of-3 gate
+   enabled to hold Nigeria at 8/8. Worth revisiting at the v2.3 refit, when the deferred
+   669-FOV set pools in the very FOVs the gate targets.
+3. **`check_empty_field_gate.py` now takes `--expect-exact`.** Its hardcoded v2.2 baselines
+   fail on any legitimate refit; v2.2-lb-optimized passes with `--expect-exact 0.6959 0.6838`.
 
 ## Reproducing
 
@@ -204,7 +237,14 @@ python scripts/combined/compare_lbp_variants.py --steps 2 4 6 8 12 16 24 32 48 6
 # 5. the figure
 python scripts/combined/plot_lbp_variants.py
 
-# 6. gate checks and the Nigeria OOD run
+# 6. the adopted fit: extract at stride 16, then refit
+python scripts/combined/extract_features_v2.py \
+    --labels-csv data/results/density-rouleaux-v2/merged-labels-v2.2.csv \
+    --out data/results/density-rouleaux-v2/features-v2.2-lb-optimized.csv \
+    --lbp-step 16 --workers 4
+python scripts/combined/calibrate_v2.2-lb-optimized.py
+
+# 7. gate checks and the Nigeria OOD run
 python scripts/combined/check_empty_field_gate.py --features features-v2.2-step16.csv \
     --params ../density-rouleaux-v2/density_overlap_v2.2_params.json
 python scripts/nigeria_081226.py --params data/results/lbp-runtime/density_overlap_v2.2-nolbp_params.json --suffix nolbp

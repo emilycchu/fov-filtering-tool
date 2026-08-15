@@ -293,3 +293,106 @@ Spearman rho between the two fitted composite scores: **0.972**, vs. the true ma
 |---|---|---|---|---|---|
 | 1 | 456 | 318 | 69.7% | 9.901e-18 | 0.307 |
 | 2 | 16 | 13 | 81.2% | 0.01064 | -0.076 |
+
+---
+
+# v2.2-lb-optimized: the v2.2 fit on stride-16 LBP entropy
+
+Refit on the same 661 FOVs as v2.2, from `features-v2.2-lb-optimized.csv`, with `lbp_entropy` computed on a stride-16 centre grid. This is a runtime change, not a modelling one: `compute_features` drops from 5.85s to ~1.08s per FOV. The stride was validated first (`data/results/lbp-runtime/README.md`) -- across all 661 FOVs it changes none of the 1322 bucket assignments under v2.2's own params.
+
+## Density composite (v2.2-lb-optimized)
+
+| feature | weight | range (2nd-98th pct) |
+|---|---|---|
+| coverage | 0.236 | [0.07347, 0.4386] |
+| otsu_separability | 0.015 | [0.5166, 0.6124] |
+| saturation_score | 0.247 | [0.03368, 0.1781] |
+| lbp_entropy | 0.064 | [3.127, 4.203] |
+| glcm_contrast | 0.088 | [26.59, 87.11] |
+| edge_density_unmasked | 0.098 | [0.05926, 0.1811] |
+| tile_glcm_cv | 0.082 | [0.06242, 0.3111] |
+| tile_glcm_patchiness | 0.171 | [0.1245, 0.9339] |
+
+**Cross-validation** (5-fold): per-fold rho = [0.789, 0.794, 0.789, 0.761, 0.782], mean=0.783. Out-of-fold exact-match=69.4%, off-by-one=98.0%.
+
+Out-of-fold confusion matrix (rows=manual, cols=predicted):
+
+| manual \ predicted | Sparser | Monolayer | Slightly Dense | Dense | Very Dense |
+|---|---|---|---|---|---|
+| Sparser | 45 | 5 | 0 | 0 | 0 |
+| Monolayer | 48 | 281 | 63 | 9 | 1 |
+| Slightly Dense | 1 | 21 | 65 | 16 | 1 |
+| Dense | 0 | 0 | 13 | 30 | 12 |
+| Very Dense | 0 | 0 | 1 | 11 | 38 |
+
+Thresholds: [0.292, 0.442, 0.584, 0.71] -- **no PAVA merges** (all 5 buckets monotonically separable).
+
+## Rouleaux composite (v2.2-lb-optimized)
+
+Dropped for sign instability: otsu_separability, lbp_entropy
+
+| feature | weight | range (2nd-98th pct) |
+|---|---|---|
+| coverage | 0.263 | [0.07347, 0.4386] |
+| saturation_score | 0.269 | [0.03368, 0.1781] |
+| glcm_contrast | 0.098 | [26.59, 87.11] |
+| edge_density_unmasked | 0.043 | [0.05926, 0.1811] |
+| tile_glcm_cv | 0.088 | [0.06242, 0.3111] |
+| tile_glcm_patchiness | 0.239 | [0.1245, 0.9339] |
+
+**Cross-validation** (5-fold): per-fold rho = [0.711, 0.72, 0.745, 0.772, 0.739], mean=0.737. Out-of-fold exact-match=67.6%, off-by-one=93.8%.
+
+Out-of-fold confusion matrix (rows=manual, cols=predicted):
+
+| manual \ predicted | No Rouleaux | Slight Rouleaux | Some Rouleaux | Rouleaux | Heavy Rouleaux |
+|---|---|---|---|---|---|
+| No Rouleaux | 341 | 59 | 14 | 5 | 1 |
+| Slight Rouleaux | 31 | 30 | 24 | 10 | 2 |
+| Some Rouleaux | 2 | 16 | 20 | 5 | 3 |
+| Rouleaux | 0 | 2 | 7 | 12 | 13 |
+| Heavy Rouleaux | 0 | 0 | 2 | 18 | 44 |
+
+Thresholds: [0.374, 0.451, 0.553, 0.667] -- **no PAVA merges** (all 5 buckets monotonically separable).
+
+## What moved vs. v2.2
+
+LBP entropy is now computed on a stride-16 centre grid (0.07s/FOV vs. 4.80s). Everything else is identical: same 661 FOVs, same candidate pool, same ridge/PAVA procedure.
+
+**Density**
+
+| feature | weight (v2.2) | weight (lb-optimized) | delta |
+|---|---|---|---|
+| coverage | 0.2356 | 0.2358 | +0.00021 |
+| otsu_separability | 0.0140 | 0.0145 | +0.00052 |
+| saturation_score | 0.2465 | 0.2466 | +0.00006 |
+| lbp_entropy | 0.0654 | 0.0641 | -0.00127 |
+| glcm_contrast | 0.0874 | 0.0877 | +0.00027 |
+| edge_density_unmasked | 0.0976 | 0.0978 | +0.00020 |
+| tile_glcm_cv | 0.0822 | 0.0822 | +0.00002 |
+| tile_glcm_patchiness | 0.1714 | 0.1714 | -0.00000 |
+
+Thresholds: [0.2916, 0.4422, 0.5844, 0.7096] vs. v2.2 [0.2917, 0.4427, 0.5853, 0.7109] (max shift 0.00135).
+
+**Rouleaux**
+
+| feature | weight (v2.2) | weight (lb-optimized) | delta |
+|---|---|---|---|
+| coverage | 0.2633 | 0.2633 | +0.00000 |
+| saturation_score | 0.2688 | 0.2688 | +0.00000 |
+| glcm_contrast | 0.0976 | 0.0976 | +0.00000 |
+| edge_density_unmasked | 0.0434 | 0.0434 | +0.00000 |
+| tile_glcm_cv | 0.0884 | 0.0884 | +0.00000 |
+| tile_glcm_patchiness | 0.2385 | 0.2385 | +0.00000 |
+
+Thresholds: [0.3738, 0.4508, 0.5533, 0.6672] vs. v2.2 [0.3738, 0.4508, 0.5533, 0.6672] (max shift 0.00000).
+
+## Composite independence (v2.2-lb-optimized)
+
+Spearman rho between the two fitted composite scores: **0.972**, vs. the true manual density-vs-Rouleaux label correlation of **0.823**.
+
+## Axis-separation check (v2.2-lb-optimized)
+
+| min |delta| | n | sign matches | match rate | binomial p | Spearman rho |
+|---|---|---|---|---|---|
+| 1 | 456 | 318 | 69.7% | 9.901e-18 | 0.307 |
+| 2 | 16 | 13 | 81.2% | 0.01064 | -0.076 |
