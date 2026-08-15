@@ -70,6 +70,14 @@ contention it avoids. It also does not work naively: the first attempt returned 
 codes, because a row strip starting at local row 0 recomputes the low-bit-lossy weights at the
 wrong absolute row. `_lbp_codes` takes a `row_offset` so a strip can say where it came from.
 
+**Vectorization is not what makes this faster — threading is.** Serial vectorized measures
+6.51s against skimage's 5.39s on the same run, i.e. *slower*: rewriting a per-pixel C loop as
+whole-array numpy trades one pass over the image for ~7 passes per neighbour offset with
+materialized intermediates, and the result is memory-bandwidth-bound. Vectorization's actual
+role is as the **enabler** — skimage's Cython loop holds the GIL and cannot be split across
+threads, and splitting it across processes is the 5.05s row above. Do not read the 2.6x as a
+vectorization win; it is a threading win that vectorization made reachable.
+
 Threads only reach ~2.4x over serial on 16 cores because numpy's per-operation dispatch holds
 the interpreter lock; the arithmetic itself is memory-bandwidth-bound. Getting past this needs
 a fused compiled kernel (numba), which was deliberately not taken on — it would add a
@@ -101,6 +109,29 @@ average. That module stays unused.
 | 48 | — | — | 0.0240 | 0.102 | 2 | 0 |
 | 64 | 0.05 | 105x | 0.0330 | 0.149 | 5 | 0 |
 | 96 | — | — | 0.0470 | 0.166 | 5 | 0 |
+
+### Threading self-disables at stride 8 and above
+
+The strided path reuses the same kernel, so it gets the vectorization and the cache tiling —
+but not, in practice, the threads. Threading is per-tile, and the tile is 512 px:
+
+| stride | output grid | tiles | serial | 8 threads | threading gain |
+|---|---|---|---|---|---|
+| 1 | 2800x2800 | 36 | 6.51 s | 2.36 s | 2.76x |
+| 2 | 1400x1400 | 9 | 1.94 s | 0.83 s | 2.36x |
+| 4 | 700x700 | 4 | 0.46 s | 0.36 s | 1.28x |
+| 8 | 350x350 | 1 | 0.18 s | 0.18 s | none |
+| **16 (adopted)** | **175x175** | **1** | **0.080 s** | 0.088 s | **none** |
+| 32 | 88x88 | 1 | 0.058 s | 0.063 s | none |
+
+At stride-16 the whole output is one tile, so `_lbp_codes`' `len(blocks) == 1` guard takes the
+serial branch and never creates a pool (the 0.088 s is noise, not overhead). **The adopted
+config computes LBP on a single core** — which is the right behaviour under
+`extract_features_v2.py`'s `Pool(8)`, since it cannot oversubscribe.
+
+Smaller tiles at high stride would re-enable threading and might get 0.080 s to ~0.03 s. Not
+worth a tuning knob: `correct_illumination`'s 301-px blur is 0.63 s, so LBP stopped being the
+bottleneck well before this point.
 
 Flips are from the **fixed-params arm**: all 661 FOVs scored with
 `density_overlap_v2.2_params.json` untouched, swapping only `lbp_entropy` — i.e. what happens
