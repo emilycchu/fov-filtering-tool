@@ -9,7 +9,7 @@ Inputs are the artifacts of the two measurement scripts -- `runtime-bench.csv` f
 cannot disagree with the numbers in the report.
 
 Usage:
-    python scripts/combined/plot_lbp_variants.py [--out PATH]
+    python scripts/combined/lbp-optimization/plot_lbp_variants.py [--out PATH]
 """
 import argparse
 import json
@@ -23,7 +23,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 from matplotlib.lines import Line2D  # noqa: E402
 
-ROOT = Path(__file__).resolve().parent.parent.parent
+# one deeper than the other scripts/combined scripts, hence the extra .parent
+ROOT = Path(__file__).resolve().parent.parent.parent.parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts" / "combined"))
 

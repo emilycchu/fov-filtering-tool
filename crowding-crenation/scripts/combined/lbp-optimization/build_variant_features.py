@@ -10,14 +10,15 @@ parses) but is excluded from the candidate feature list at refit time by
 pipeline" means to the model.
 
 Usage:
-    python scripts/combined/build_variant_features.py [--variants-csv PATH] [--base PATH]
+    python scripts/combined/lbp-optimization/build_variant_features.py [--variants-csv PATH] [--base PATH]
         [--out-dir PATH]
 """
 import argparse
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent.parent
+# one deeper than the other scripts/combined scripts, hence the extra .parent
+ROOT = Path(__file__).resolve().parent.parent.parent.parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts" / "combined"))
 

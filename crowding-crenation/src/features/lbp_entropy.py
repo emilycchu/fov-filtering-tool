@@ -3,10 +3,10 @@
 `lbp_entropy()` returns exactly what it always did -- the number is bit-identical to the
 `skimage.feature.local_binary_pattern` implementation this module used to call, which is
 preserved as `lbp_entropy_skimage()` and asserted against in
-`scripts/combined/bench_lbp.py`. What changed is how it gets there: skimage walks 7.84M
-pixels x 24 neighbours in a generic per-pixel Cython loop (~7s per 2800x2800 FOV, ~88% of
-`_v2_common.compute_features`), where `_lbp_codes()` does the same arithmetic as whole-array
-numpy operations over cache-sized tiles spread across threads.
+`scripts/combined/lbp-optimization/bench_lbp.py`. What changed is how it gets there: skimage
+walks 7.84M pixels x 24 neighbours in a generic per-pixel Cython loop (~5s per 2800x2800 FOV,
+~82% of `_v2_common.compute_features`), where `_lbp_codes()` does the same arithmetic as
+whole-array numpy operations over cache-sized tiles spread across threads.
 
 Reproducing skimage bit-for-bit takes three details that are easy to miss:
 
@@ -230,7 +230,7 @@ def lbp_entropy(image, radius=DEFAULT_RADIUS, n_points=None, method="uniform", s
 def lbp_entropy_skimage(image, radius=DEFAULT_RADIUS, n_points=None, method="uniform"):
     """The original skimage implementation, kept as the equivalence reference.
 
-    Not called by the pipeline for the uniform method. `scripts/combined/bench_lbp.py`
+    Not called by the pipeline for the uniform method. `scripts/combined/lbp-optimization/bench_lbp.py`
     asserts `_lbp_codes()` reproduces `local_binary_pattern()` exactly; this is the other
     side of that assertion, so do not "clean it up" into a wrapper around the fast path.
     """

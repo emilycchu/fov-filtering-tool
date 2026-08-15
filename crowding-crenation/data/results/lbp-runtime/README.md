@@ -41,9 +41,10 @@ Two things fall out of this that matter more than the speedups:
 `src/features/lbp_entropy.py` now computes the uniform-method LBP as whole-array numpy
 operations over cache-sized tiles across threads, instead of skimage's generic per-pixel Cython
 loop. `lbp_entropy()`'s signature and return value are unchanged; the old implementation is
-kept as `lbp_entropy_skimage()` and asserted against by `scripts/combined/bench_lbp.py`, which
-checks `np.array_equal` on the full code map for five real FOVs (both local datasets plus one
-streamed from GCS) and on small random arrays where every pixel is a border pixel.
+kept as `lbp_entropy_skimage()` and asserted against by
+`scripts/combined/lbp-optimization/bench_lbp.py`, which checks `np.array_equal` on the full
+code map for five real FOVs (both local datasets plus one streamed from GCS) and on small
+random arrays where every pixel is a border pixel.
 
 Reproducing skimage bit-for-bit needed three details, two of which are genuinely easy to miss:
 
@@ -254,19 +255,19 @@ that calibration and inference cannot diverge.
 
 ```bash
 # 1. the exactness gate + timings  (writes runtime-bench.csv)
-python scripts/combined/bench_lbp.py --steps 1 2 4 8 16 32 64 --repeat 2
+python scripts/combined/lbp-optimization/bench_lbp.py --steps 1 2 4 8 16 32 64 --repeat 2
 
 # 2. one pass over 661 FOVs, all strides   (~14 min; --append widens the sweep cheaply)
-python scripts/combined/extract_lbp_variants.py --steps 2 4 6 8 12 16 24 32 48 64 96 --workers 4
+python scripts/combined/lbp-optimization/extract_lbp_variants.py --steps 2 4 6 8 12 16 24 32 48 64 96 --workers 4
 
 # 3. patch only the lbp_entropy column per variant
-python scripts/combined/build_variant_features.py
+python scripts/combined/lbp-optimization/build_variant_features.py
 
 # 4. both comparison arms + per-variant params JSONs
-python scripts/combined/compare_lbp_variants.py --steps 2 4 6 8 12 16 24 32 48 64 96
+python scripts/combined/lbp-optimization/compare_lbp_variants.py --steps 2 4 6 8 12 16 24 32 48 64 96
 
 # 5. the figure
-python scripts/combined/plot_lbp_variants.py
+python scripts/combined/lbp-optimization/plot_lbp_variants.py
 
 # 6. the adopted fit: extract at stride 16, then refit
 python scripts/combined/extract_features_v2.py \

@@ -14,7 +14,7 @@ out-of-bounds neighbours as 0, so a strip carrying a `ceil(radius)+1` halo repro
 interior rows.
 
 Usage:
-    python scripts/combined/bench_lbp.py [--steps 1 2 4 6 8] [--repeat 1] [--skip-process]
+    python scripts/combined/lbp-optimization/bench_lbp.py [--steps 1 2 4 6 8] [--repeat 1] [--skip-process]
 """
 import argparse
 import sys
@@ -26,7 +26,8 @@ from pathlib import Path
 import numpy as np
 from skimage.feature import local_binary_pattern
 
-ROOT = Path(__file__).resolve().parent.parent.parent
+# one deeper than the other scripts/combined scripts, hence the extra .parent
+ROOT = Path(__file__).resolve().parent.parent.parent.parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts" / "combined"))
 

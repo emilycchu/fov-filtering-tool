@@ -21,14 +21,15 @@ module-level, so the `nolbp` arm could not drop the feature, and its report writ
 record. Everything here writes under `data/results/lbp-runtime/`.
 
 Usage:
-    python scripts/combined/compare_lbp_variants.py [--steps 2 4 6 8] [--out-dir PATH]
+    python scripts/combined/lbp-optimization/compare_lbp_variants.py [--steps 2 4 6 8] [--out-dir PATH]
 """
 import argparse
 import json
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent.parent
+# one deeper than the other scripts/combined scripts, hence the extra .parent
+ROOT = Path(__file__).resolve().parent.parent.parent.parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts" / "combined"))
 

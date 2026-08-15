@@ -15,7 +15,7 @@ disk.
 `features-v2.2.csv` lbp_entropy column exactly, for all 661 rows.
 
 Usage:
-    python scripts/combined/extract_lbp_variants.py [--steps 1 2 4 6 8] [--workers 8]
+    python scripts/combined/lbp-optimization/extract_lbp_variants.py [--steps 1 2 4 6 8] [--workers 8]
         [--labels-csv PATH] [--out PATH] [--limit N]
 """
 import argparse
@@ -24,7 +24,8 @@ import time
 from multiprocessing import Pool
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent.parent
+# one deeper than the other scripts/combined scripts, hence the extra .parent
+ROOT = Path(__file__).resolve().parent.parent.parent.parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts" / "combined"))
 

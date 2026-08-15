@@ -253,12 +253,22 @@ score_fov_v2.py            inference: score a new image/directory with a params 
 plot_results_v2.py         density/Rouleaux/density-vs-Rouleaux scatter plots
 plot_bucket_comparison_v2.py  manual-vs-model bucket-grid comparison plot
 
-bench_lbp.py               LBP: assert the fast kernel is bit-identical to skimage; time it
-extract_lbp_variants.py    LBP: entropy at every candidate stride, one pass over 661 FOVs
-build_variant_features.py  LBP: patch only the lbp_entropy column per variant
-compare_lbp_variants.py    LBP: fixed-params + refit comparison of every variant vs. v2.2
-plot_lbp_variants.py       LBP: the runtime/accuracy tradeoff figure
 ```
+
+The LBP runtime study lives in its own subdirectory, since none of it runs as part of
+scoring — it is the evidence behind the stride, not a step in the pipeline:
+
+```
+lbp-optimization/bench_lbp.py               assert the fast kernel is bit-identical to
+                                            skimage; time it (--full-set checks all 661)
+lbp-optimization/extract_lbp_variants.py    entropy at every candidate stride, one pass
+lbp-optimization/build_variant_features.py  patch only the lbp_entropy column per variant
+lbp-optimization/compare_lbp_variants.py    fixed-params + refit comparison vs. v2.2
+lbp-optimization/plot_lbp_variants.py       the runtime/accuracy tradeoff figure
+```
+
+`calibrate_v2.2-lb-optimized.py` deliberately stays above, next to the other
+`calibrate_v2*.py` scripts: it is a shipped fit rather than part of the study.
 
 ## LBP runtime (`bench_lbp.py` and friends)
 
