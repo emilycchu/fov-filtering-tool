@@ -29,10 +29,11 @@ IN_CATALOG = {"KTR-72502948": True, "KTR-72502946": False}
 # Reference categorical slot 4. See the docstring for why it always carries a dark edge.
 STAR_COLOR = "#eda100"
 STAR_EDGE = "#0b0b0b"
-# Stars need noticeably more area than a disc to read at the same visual weight, because the
-# points taper: at s=210 a star looks smaller than a ring of the same s.
-STAR_SIZE = 340
-STAR_EDGE_WIDTH = 0.9
+# Stars need somewhat more area than a disc to read at the same visual weight, because the points
+# taper -- but not much more: at 340 the star crowded the marks it was pointing at, and the outline
+# plus the label already do the work of making it findable.
+STAR_SIZE = 175
+STAR_EDGE_WIDTH = 0.8
 
 # ANNOTATABLE is *ordinal* (1 hard .. 4 annotatable), so it gets a single-hue ramp rather than four
 # categorical hues -- the question these figures ask is whether that order lines up with an
