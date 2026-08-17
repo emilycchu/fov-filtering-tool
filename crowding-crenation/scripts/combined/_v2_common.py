@@ -62,7 +62,22 @@ FEATURES_CSV = RESULTS_DIR / "features.csv"
 LBP_RUNTIME_DIR = ROOT / "data" / "results" / "lbp-runtime"
 LBP_VARIANTS_CSV = LBP_RUNTIME_DIR / "lbp-variants.csv"
 LBP_COMPARISON_CSV = LBP_RUNTIME_DIR / "variant-comparison.csv"
+# The original v2 fit's home. This is calibrate_v2.py's `--params-out` **write** target, not a
+# "current params" pointer -- repointing it would make a bare `calibrate_v2.py` run overwrite
+# whichever fit it named. Consumers that only *read* a fit should use DEFAULT_SCORING_PARAMS.
 PARAMS_JSON = RESULTS_DIR / "density_overlap_v2_params.json"
+# What a tool defaults to when it is handed no --params: the current recommended fit. It used
+# to be the original v2 fit (337 FOVs, superseded twice over), so a bare invocation silently
+# scored with the weakest available calibration -- masked only by every documented example
+# passing --params explicitly.
+#
+# v2.2-optimized is the same 661-FOV fit as v2.2 on the same procedure, differing only in that
+# lbp_entropy uses a stride-16 centre grid and the illumination background is estimated 4x
+# downsampled: ~12x faster per FOV, out-of-fold accuracy unchanged on both axes, one knife-edge
+# label difference in 661, and 8/8 on the out-of-distribution Nigeria stain. Its lbp_step and
+# blur_downsample are recorded in the file and read back by every inference path, so defaulting
+# to it cannot silently mismatch features against weights.
+DEFAULT_SCORING_PARAMS = RESULTS_DIR / "density_overlap_v2.2-optimized_params.json"
 REPORT_MD = RESULTS_DIR / "calibration-report.md"
 PLOTS_DIR = RESULTS_DIR / "plots"
 

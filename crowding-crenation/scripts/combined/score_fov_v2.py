@@ -1,6 +1,5 @@
 """The runnable v2 tool: score a new FOV image or directory of images for density and
-Rouleaux (overlap) severity, using the weights/thresholds calibrate_v2.py fit against the
-337-FOV manual annotation set (density_overlap_v2_params.json). Unlike
+Rouleaux (overlap) severity, using the weights/thresholds fit by calibration. Unlike
 scripts/ai-first/label_new_slide.py's slide-relative quintiles, these thresholds are fixed
 ahead of time, so this generalizes to a new slide without re-deriving anything per slide.
 
@@ -10,6 +9,17 @@ Usage:
 
 <input> is a single image file or a directory of images (local path or gs:// URI).
 Without --out-csv, results are printed as JSON to stdout (matching src/pipeline.py's CLI).
+
+--params defaults to the **v2.2-optimized** fit (661 FOVs). It used to default to the original
+v2 fit (337 FOVs, superseded twice over), which meant a bare invocation silently scored with
+the weakest available calibration -- masked only by every documented example passing --params
+explicitly.
+
+The default carrying `lbp_step`/`blur_downsample` is safe rather than risky: those live in the
+params file and every inference path reads them back (`lbp_step_from_params`,
+`blur_downsample_from_params`), so the features are always computed the way the fit they are
+being scored against was built. Pass density_overlap_v2.2_params.json for the full-resolution
+v2.2 fit.
 """
 import argparse
 import json
@@ -18,7 +28,7 @@ from multiprocessing.pool import ThreadPool
 from pathlib import Path
 
 from _v2_common import (
-    PARAMS_JSON,
+    DEFAULT_SCORING_PARAMS,
     apply_label_overrides,
     blur_downsample_from_params,
     compute_features,
@@ -118,7 +128,10 @@ def write_csv(rows, out_csv):
 def main():
     parser = argparse.ArgumentParser(description="Score FOV images for density and Rouleaux severity.")
     parser.add_argument("input", help="Image file or directory of images (local path or gs:// URI).")
-    parser.add_argument("--params", default=str(PARAMS_JSON))
+    parser.add_argument("--params", default=str(DEFAULT_SCORING_PARAMS),
+                        help="calibrated params JSON; defaults to the v2.2-optimized fit "
+                             "(661 FOVs, ~12x faster per FOV, accuracy unchanged). Pass "
+                             "density_overlap_v2.2_params.json for the full-resolution v2.2 fit")
     parser.add_argument("--out-csv", default=None)
     parser.add_argument("--workers", type=int, default=1,
                         help="8 suits local images; 4 is faster for GCS-streamed ones")

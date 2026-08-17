@@ -12,12 +12,44 @@ all of them manually labeled sparser + no rouleaux and *already* predicted as su
 exact-match bit-for-bit unchanged.
 
 Re-run this after any recalibration -- the floors move with the fit, and the deferred 669-FOV
-v2.3 refit will pool in the very FOVs the gate is meant to catch. The expected counts below
-are for v2.2; a refit legitimately changes them, but the invariant that every gated FOV is
-truly sparse must hold, and that is what fails loudly here if it stops being true.
+v2.3 refit will pool in the very FOVs the gate is meant to catch.
+
+**Invariants vs. snapshots.** Two of the things checked here are true of any healthy fit, and
+two are just one fit's recorded numbers. The distinction used to be stated in this docstring
+but not implemented: the snapshot counts were hard-coded pass/fail criteria, so a *legitimate*
+refit -- v2.2-optimized, which differs from v2.2 by one knife-edge FOV -- reported FAILED for
+no reason. A check that cries wolf on correct work gets ignored, which is worse than not
+having it.
+
+So the invariants always assert:
+
+- every FOV the gate fires on is manually labeled (sparser, no rouleaux) -- it must never
+  override a field the model should be describing;
+- the gate changes no in-distribution prediction;
+- incomplete input fails the gate rather than tripping it.
+
+**Why does it only fire on 3 of 661, when 50 FOVs are manually "sparser"?** Because it is a
+near-empty-field guard, not a sparser detector -- most sparser fields have plenty of cells and
+the composite reads them fine. Checked directly: of the 10 in-distribution FOVs the density
+composite over-estimates by 2+ buckets from sparser/monolayer, **nine have 0 of 4 features
+below floor** and the tenth has 1 -- none are near-empty, so the gate correctly stays out. Those
+ten are all monolayer -> dense, i.e. a *different* failure mode (cross-stain/texture
+over-scoring, the same one `dpc-051-LB-D3-...` illustrates in the v2 report), which this gate
+was never meant to address and structurally cannot. The gate under-firing is therefore not the
+problem; that over-scoring is, and it is the next thing worth attacking.
+
+This is also why the 8-FOV Nigeria set matters out of proportion to its size: it contains two
+genuinely near-empty fields, so it is the only place the gate demonstrably earns its keep
+(8/8 with it, 6/8 without).
+
+The snapshots (`--expect-fired`, `--expect-exact`) assert only when passed explicitly. Bare,
+they are reported as the numbers to pin. Regression command for the current fit:
+
+    python scripts/combined/check_empty_field_gate.py --expect-fired 3         --expect-exact 0.6959 0.6838
 
 Usage:
     python scripts/combined/check_empty_field_gate.py [--features CSV] [--params JSON]
+        [--expect-fired N] [--expect-exact DENSITY OVERLAP]
 """
 import argparse
 import json
@@ -37,12 +69,11 @@ from _v2_common import (  # noqa: E402
 )
 from src.composite_v2 import bucket, weighted_composite  # noqa: E402
 
-DEFAULT_FEATURES = RESULTS_DIR / "features-v2.2.csv"
-DEFAULT_PARAMS = RESULTS_DIR / "density_overlap_v2.2_params.json"
-
-# v2.2 baselines, from the fit recorded in calibration-report.md
-EXPECTED_FIRED = 3
-EXPECTED_EXACT = {"density": 0.6974, "overlap": 0.6838}
+# Defaults are the deployed fit, so a bare run checks what score_fov_v2.py actually uses.
+# They are a matched pair -- features extracted at the same lbp_step/blur_downsample the params
+# record -- and must be changed together.
+DEFAULT_FEATURES = RESULTS_DIR / "features-v2.2-optimized.csv"
+DEFAULT_PARAMS = RESULTS_DIR / "density_overlap_v2.2-optimized_params.json"
 
 
 def score_axis(row, axis_params):
@@ -56,14 +87,13 @@ def main():
     parser = argparse.ArgumentParser(description="Check the empty-field gate against the calibration set.")
     parser.add_argument("--features", default=str(DEFAULT_FEATURES))
     parser.add_argument("--params", default=str(DEFAULT_PARAMS))
-    parser.add_argument("--expect-fired", type=int, default=EXPECTED_FIRED,
-                        help="expected number of gated FOVs; pass a new value after a refit")
+    parser.add_argument("--expect-fired", type=int, default=None,
+                        help="pin the number of gated FOVs. Unset (default): reported, not "
+                             "asserted -- a refit legitimately moves it")
     parser.add_argument("--expect-exact", type=float, nargs=2, metavar=("DENSITY", "OVERLAP"),
-                        default=(EXPECTED_EXACT["density"], EXPECTED_EXACT["overlap"]),
-                        help="expected gated exact-match per axis. Defaults to the v2.2 "
-                             "baselines; a refit legitimately moves them (v2.2-optimized "
-                             "is 0.6959 / 0.6838), so pass its own numbers rather than "
-                             "reading a spurious failure as a broken gate")
+                        default=None,
+                        help="pin gated exact-match per axis. Unset (default): reported, not "
+                             "asserted")
     args = parser.parse_args()
 
     rows = read_csv_dicts(args.features)
@@ -89,7 +119,7 @@ def main():
             failures.append(f"{r['filename']} is not manually labeled "
                             f"({cfg['density_label']}, {cfg['overlap_label']}) but the gate forces it there")
 
-    if len(fired) != args.expect_fired:
+    if args.expect_fired is not None and len(fired) != args.expect_fired:
         failures.append(f"expected the gate to fire on {args.expect_fired} FOVs, got {len(fired)}")
 
     # near-misses: one short of the full set below floor. Not an error -- the margin between
@@ -118,9 +148,11 @@ def main():
         print(f"{axis:<8} exact-match  ungated={ungated / len(rows):.4f}  gated={gated / len(rows):.4f}{flag}")
         if ungated != gated:
             failures.append(f"{axis}: gate changed {abs(gated - ungated)} in-distribution predictions")
-        expected = args.expect_exact[0] if axis == "density" else args.expect_exact[1]
-        if abs(counts[axis][1] - expected) > 5e-5:
-            failures.append(f"{axis}: exact-match {counts[axis][1]:.4f} != the expected baseline {expected}")
+        if args.expect_exact is not None:
+            expected = args.expect_exact[0] if axis == "density" else args.expect_exact[1]
+            if abs(counts[axis][1] - expected) > 5e-5:
+                failures.append(f"{axis}: exact-match {counts[axis][1]:.4f} != the pinned "
+                                f"baseline {expected}")
 
     # incomplete input must fail the gate rather than trip it -- it forces the bottom bucket
     if fired:
