@@ -247,7 +247,7 @@ extract_features_v2.py    compute_features() over the merged set -> features.csv
 calibrate_v2.py            v2: axis-exclusive partial-correlation selection + ridge + PAVA
 calibrate_v2.1.py          v2.1: full-feature-pool refit, same 337 FOVs
 calibrate_v2.2.py          v2.2: full-feature-pool refit, pooled to 661 FOVs
-calibrate_v2.2-lb-optimized.py  v2.2 refit on stride-16 LBP entropy (5.7x faster per FOV)
+calibrate_v2.2-optimized.py  v2.2 refit on stride-16 LBP entropy (5.7x faster per FOV)
 check_empty_field_gate.py  assert the empty-field gate is a no-op on the calibration set
 score_fov_v2.py            inference: score a new image/directory with a params JSON
 plot_results_v2.py         density/Rouleaux/density-vs-Rouleaux scatter plots
@@ -267,7 +267,7 @@ lbp-optimization/compare_lbp_variants.py    fixed-params + refit comparison vs. 
 lbp-optimization/plot_lbp_variants.py       the runtime/accuracy tradeoff figure
 ```
 
-`calibrate_v2.2-lb-optimized.py` deliberately stays above, next to the other
+`calibrate_v2.2-optimized.py` deliberately stays above, next to the other
 `calibrate_v2*.py` scripts: it is a shipped fit rather than part of the study.
 
 ## LBP runtime (`bench_lbp.py` and friends)
@@ -283,29 +283,48 @@ in-distribution, but disables the empty-field gate (Nigeria 8/8 → 6/8), so it 
 adopted: `EMPTY_FIELD_FEATURES` still lists all four features. The measurements, the
 per-variant params JSONs, and the reasoning live in `data/results/lbp-runtime/README.md`.
 
-### `lbp_step` and v2.2-lb-optimized
+### The two runtime knobs, and v2.2-optimized
 
-`compute_features(image, lbp_step=1)` takes the stride, and **stride-16 is calibrated as
-`v2.2-lb-optimized`** — same 661 FOVs, same procedure, `compute_features` down from 5.85s to
-1.03s per FOV (5.7x):
+`compute_features(image, lbp_step=1, blur_downsample=1)` takes both, and **`lbp_step=16` plus
+`blur_downsample=4` is calibrated as `v2.2-optimized`** — same 661 FOVs, same procedure:
 
-| | v2.2 | v2.2-lb-optimized |
+| | v2.2 | v2.2-optimized |
 |---|---|---|
-| `compute_features` per FOV | 5.85 s | **1.03 s** |
+| `compute_features` per FOV | 3.11 s | **0.49 s** (6.3x) |
+| — against the original v2.2 (skimage LBP) | ~5.9 s | **~12x** |
 | density OOF exact / off-by-one | 69.4% / 98.0% | 69.4% / 98.0% |
 | Rouleaux OOF exact / off-by-one | 67.6% / 93.8% | 67.6% / 93.8% |
-| in-sample label differences | — | 1 of 661 (a knife-edge FOV) |
+| density CV mean rho | 0.783 | 0.783 |
+| composite independence rho | 0.972 | 0.972 |
+| label differences vs v2.2 | — | 1 of 661 density, 0 Rouleaux |
 | empty-field gate | 3 FOVs, no-op | 3 FOVs, no-op |
 
-`lbp_step` is the one parameter that can break `compute_features`' "calibration and inference
-can never differ" guarantee, since a fit made on stride-16 entropy must be scored on stride-16
-entropy. So it is **not a free knob**: calibration records it in the params JSON, and every
-inference path reads it back with `lbp_step_from_params()`. It defaults to 1, so v2/v2.1/v2.2
-params — which have no `lbp_step` key — score at full resolution exactly as before. Never
-hardcode it at a call site.
+Each knob moves exactly one thing, which is what makes them auditable:
 
-`extract_features_v2.py --lbp-step` also defaults to 1, so re-running it still reproduces the
-older feature CSVs; the optimized set was built with `--lbp-step 16`.
+| knob | what it changes | what it does not |
+|---|---|---|
+| `lbp_step` | `lbp_entropy` only | everything else, bit-for-bit |
+| `blur_downsample` | `tile_glcm_cv`, `tile_glcm_patchiness` only | the other seven, bit-for-bit |
+
+Both were verified that way on all 661 FOVs: re-extracting with `--lbp-step 16` left the other
+eight columns byte-identical, and adding `--blur-downsample 4` left seven of nine untouched.
+
+**Neither is a free knob.** They are the only parameters that can break this module's
+"calibration and inference can never differ" guarantee, because a fit made on subsampled
+features has to be *scored* on subsampled features. So the fit records them, and every
+inference path reads them back with `lbp_step_from_params()` /
+`blur_downsample_from_params()` — never hardcoded at a call site. Both default to 1, so
+v2/v2.1/v2.2 params, which have neither key, score at full resolution exactly as before.
+`extract_features_v2.py`'s `--lbp-step` / `--blur-downsample` default to 1 for the same reason,
+so re-running it still reproduces the older feature CSVs.
+
+**`blur_downsample=2` is disqualified, and not for the reason you would guess.** It is the only
+factor in the sweep that changes any label — 4 Rouleaux flips, all of them correct predictions
+lost — and it drifts 5-14x more than 4 despite being the gentler downsample. It is not the sigma
+mismatch from integer-dividing the kernel size; a sigma-matched variant measured identical. See
+`data/results/pipeline-runtime/README.md`. Going past 4 is pointless for a different reason:
+`correct_illumination`'s float32 subtract/clip is ~0.11 s of fixed cost, so 8 and 16 are no
+faster while drifting more.
 
 The single in-sample difference is `dpc-176-KTR-72502946.png` (manual: dense), and it is a
 threshold artifact rather than a feature one: its composite score moved by −0.00006 while the

@@ -61,7 +61,7 @@ def main():
     parser.add_argument("--expect-exact", type=float, nargs=2, metavar=("DENSITY", "OVERLAP"),
                         default=(EXPECTED_EXACT["density"], EXPECTED_EXACT["overlap"]),
                         help="expected gated exact-match per axis. Defaults to the v2.2 "
-                             "baselines; a refit legitimately moves them (v2.2-lb-optimized "
+                             "baselines; a refit legitimately moves them (v2.2-optimized "
                              "is 0.6959 / 0.6838), so pass its own numbers rather than "
                              "reading a spurious failure as a broken gate")
     args = parser.parse_args()

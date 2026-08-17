@@ -64,10 +64,11 @@ from _v2_common import (  # noqa: E402
     NIGERIA_LABELS_CSV,
     OVERLAP_LEVELS,
     apply_label_overrides,
+    blur_downsample_from_params,
     compute_features,
-    lbp_step_from_params,
     density_ordinal,
     display_level,
+    lbp_step_from_params,
     empty_field_fired,
     list_image_paths,
     load_image,
@@ -116,8 +117,9 @@ def load_manual_labels(path=NIGERIA_LABELS_CSV):
 # --- scoring -----------------------------------------------------------------------------
 
 def _extract_one(args):
-    path, lbp_step = args
-    features = compute_features(load_image(path), lbp_step=lbp_step)
+    path, lbp_step, blur_downsample = args
+    features = compute_features(load_image(path), lbp_step=lbp_step,
+                                blur_downsample=blur_downsample)
     features["filename"] = Path(str(path)).name
     return features
 
@@ -129,9 +131,10 @@ def score_axis(features, axis_params):
 
 
 def score_all(paths, params, workers, manual=None):
-    # The LBP stride comes from the params file, so a stride-16 fit is scored on stride-16
+    # Both runtime knobs come from the params file, so an optimized fit is scored on matching
     # features and an older full-resolution fit is unaffected.
-    jobs = [(p, lbp_step_from_params(params)) for p in paths]
+    jobs = [(p, lbp_step_from_params(params), blur_downsample_from_params(params))
+            for p in paths]
     if workers > 1:
         with Pool(workers) as pool:
             rows = pool.map(_extract_one, jobs)

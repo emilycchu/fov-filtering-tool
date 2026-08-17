@@ -18,6 +18,7 @@ from pathlib import Path
 from _v2_common import (
     PARAMS_JSON,
     apply_label_overrides,
+    blur_downsample_from_params,
     compute_features,
     lbp_step_from_params,
     list_image_paths,
@@ -41,9 +42,11 @@ def _score_axis(features, axis_params):
 
 def score_image_v2(path, params):
     image = load_image(path)
-    # The stride comes from the params file, never from a local default -- a fit made on
-    # subsampled LBP entropy has to be scored the same way.
-    features = compute_features(image, lbp_step=lbp_step_from_params(params))
+    # Both runtime knobs come from the params file, never from a local default -- a fit made
+    # on subsampled LBP entropy or a downsampled illumination background has to be scored the
+    # same way, and only the fit knows which it was.
+    features = compute_features(image, lbp_step=lbp_step_from_params(params),
+                                blur_downsample=blur_downsample_from_params(params))
 
     density_score, density_label = _score_axis(features, params["density"])
     overlap_score, overlap_label = _score_axis(features, params["overlap"])

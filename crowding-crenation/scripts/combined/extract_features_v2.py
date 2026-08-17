@@ -15,6 +15,7 @@ from functools import partial
 from multiprocessing import Pool
 
 from _v2_common import (
+    DEFAULT_BLUR_DOWNSAMPLE,
     DEFAULT_LBP_STEP,
     FEATURES_CSV,
     MERGED_LABELS_CSV,
@@ -34,9 +35,9 @@ LABEL_FIELDNAMES = ["fov_key", "dataset", "filename", "image_path", "density_lab
 FIELDNAMES = LABEL_FIELDNAMES + FEATURE_NAMES
 
 
-def _score_one(row, lbp_step=DEFAULT_LBP_STEP):
+def _score_one(row, lbp_step=DEFAULT_LBP_STEP, blur_downsample=DEFAULT_BLUR_DOWNSAMPLE):
     image = load_image(row["image_path"])
-    features = compute_features(image, lbp_step=lbp_step)
+    features = compute_features(image, lbp_step=lbp_step, blur_downsample=blur_downsample)
     return {**row, **features}
 
 
@@ -48,6 +49,9 @@ def main():
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--lbp-step", type=int, default=DEFAULT_LBP_STEP,
                         help="LBP centre-grid stride; 1 (default) reproduces v2/v2.1/v2.2")
+    parser.add_argument("--blur-downsample", type=int, default=DEFAULT_BLUR_DOWNSAMPLE,
+                        help="illumination-background downsample; 1 (default) reproduces "
+                             "v2/v2.1/v2.2. Use 4; 2 is measurably worse than 4")
     args = parser.parse_args()
 
     rows = read_csv_dicts(args.labels_csv)
@@ -55,10 +59,12 @@ def main():
         rows = rows[: args.limit]
 
     with Pool(args.workers) as pool:
-        results = pool.map(partial(_score_one, lbp_step=args.lbp_step), rows)
+        results = pool.map(partial(_score_one, lbp_step=args.lbp_step,
+                                          blur_downsample=args.blur_downsample), rows)
 
     write_csv_dicts(args.out, FIELDNAMES, results)
-    print(f"wrote {len(results)} rows to {args.out} (lbp_step={args.lbp_step})")
+    print(f"wrote {len(results)} rows to {args.out} "
+          f"(lbp_step={args.lbp_step}, blur_downsample={args.blur_downsample})")
 
 
 if __name__ == "__main__":
