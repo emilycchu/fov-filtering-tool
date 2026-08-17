@@ -134,6 +134,38 @@ output; out of scope here.
 - **Sharing Otsu between `otsu_segment` and `otsu_separability`.** Real duplication — both
   convert and threshold — but 0.04 s total for two signature changes.
 
+## Opportunity 3 — the pool was the wrong kind
+
+Once compute dropped to ~0.5 s, `multiprocessing.Pool` stopped making sense. Measured on 40
+FOVs, same work, only the pool type changed:
+
+| | local FOVs | GCS-streamed FOVs |
+|---|---|---|
+| `Pool(2)` processes | 0.493 s/FOV | 0.952 s/FOV |
+| `ThreadPool(2)` | 0.365 s/FOV | 0.878 s/FOV |
+| `ThreadPool(4)` | 0.267 s/FOV | **0.715 s/FOV** |
+| `ThreadPool(8)` | **0.206 s/FOV** | 0.856 s/FOV |
+
+**Threads win on both, by up to 2.4x.** The work releases the GIL almost throughout — blob
+downloads are network IO, the compute is cv2/numpy — so threads actually parallelize it. And
+because they share one address space, 8 of them fit on a machine where `Pool(4)` ran out of
+memory outright: each *process* worker transiently holds two float32 copies of a 7.84M-pixel
+image, and 4 of those exceeded the ~400 MB free.
+
+GCS prefers 4 threads and local prefers 8: past 4 concurrent streams the per-thread
+`storage.Client` connections stop paying for themselves. `_gcs_client()` already keys clients
+by thread (`threading.local`), so a thread pool was the anticipated usage.
+
+End to end, extracting all 661 features went from **~7.9 min to 3.4 min** (0.312 s/FOV wall,
+6 threads) — and the output CSV is **byte-identical** to the process-pool version.
+
+**One hazard this exposed.** `lbp_entropy._auto_workers()` returned 1 inside a *process* pool
+(daemonic workers) but not inside a *thread* pool, whose workers are ordinary threads of the
+non-daemonic main process. Every FOV would then have spawned its own 8 threads on top of the
+pool's. It happened to be invisible at `lbp_step=16`, where the single-tile guard takes the
+serial branch anyway — so it would only have bitten at small strides, which is exactly when it
+costs most. `_auto_workers` now checks `threading.current_thread() is not main_thread()` too.
+
 ## IO, which the per-FOV numbers hide
 
 GCS steady-state download is **0.33 s/FOV at ~12 MB/s**; the first call in a process costs
@@ -161,14 +193,20 @@ The sweep runs in-process at `--workers 1` for that reason (26 min for 661 FOVs)
    exactly as before.
 3. **`v2.2-optimized`** — the refit carrying both knobs.
 
+4. **Grayscale decode**, as `load_image(path, grayscale=False)` — opt-in, so callers that
+   render images keep colour. `extract_features_v2.py` and `score_fov_v2.py` pass
+   `grayscale=True`; `nigeria_081226.py` does not, because its thumbnail sheet needs colour.
+5. **`ThreadPool` instead of `Pool`** in both batch paths, with `--pool process` as an escape
+   hatch, plus the `_auto_workers` nesting fix that switch required.
+
 **Not adopted:**
 
-4. **Grayscale decode at the IO layer.** `IMREAD_GRAYSCALE` is verified bit-identical on all 661
-   FOVs, but it is worth only ~0.04 s and it changes `load_image`'s contract for every caller,
-   including `nigeria_081226.py`'s thumbnail sheet, which genuinely wants colour. Left as a
-   documented, measured opportunity rather than bundled in.
-5. **`downsample=2`** — disqualified, see above.
-6. **Anything past 4.** The float32 tail means there is no speed left, only drift.
+6. **`downsample=2`** — disqualified, see above.
+7. **Anything past 4.** The float32 tail means there is no speed left, only drift.
+8. **A dedicated GCS prefetcher.** The thread pool already overlaps downloads with compute, so
+   a separate prefetch stage would add a queue and a lifecycle for a fraction of what switching
+   pool types already delivered. Revisit only if GCS-half throughput becomes the binding
+   constraint again.
 
 **Next bottleneck** is the `tile_glcm` grid plus whole-image GLCM (~0.2 s combined), and no
 cheap exact route was found for either.

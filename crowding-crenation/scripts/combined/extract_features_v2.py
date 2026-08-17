@@ -13,6 +13,7 @@ score_fov_v2.py reads it back to score with the same stride.
 import argparse
 from functools import partial
 from multiprocessing import Pool
+from multiprocessing.pool import ThreadPool
 
 from _v2_common import (
     DEFAULT_BLUR_DOWNSAMPLE,
@@ -36,7 +37,9 @@ FIELDNAMES = LABEL_FIELDNAMES + FEATURE_NAMES
 
 
 def _score_one(row, lbp_step=DEFAULT_LBP_STEP, blur_downsample=DEFAULT_BLUR_DOWNSAMPLE):
-    image = load_image(row["image_path"])
+    # grayscale=True is bit-identical here and skips decoding three identical channels --
+    # every FOV in this repo is already monochrome. See src/pipeline.py::load_image.
+    image = load_image(row["image_path"], grayscale=True)
     features = compute_features(image, lbp_step=lbp_step, blur_downsample=blur_downsample)
     return {**row, **features}
 
@@ -45,7 +48,10 @@ def main():
     parser = argparse.ArgumentParser(description="Extract candidate features for the merged calibration set.")
     parser.add_argument("--labels-csv", default=str(MERGED_LABELS_CSV))
     parser.add_argument("--out", default=str(FEATURES_CSV))
-    parser.add_argument("--workers", type=int, default=8)
+    parser.add_argument("--workers", type=int, default=8,
+                        help="8 suits local images; 4 is faster for GCS-streamed ones")
+    parser.add_argument("--pool", choices=("thread", "process"), default="thread",
+                        help="thread (default) is ~2.4x faster and far lighter on memory")
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--lbp-step", type=int, default=DEFAULT_LBP_STEP,
                         help="LBP centre-grid stride; 1 (default) reproduces v2/v2.1/v2.2")
@@ -58,13 +64,32 @@ def main():
     if args.limit:
         rows = rows[: args.limit]
 
-    with Pool(args.workers) as pool:
+# ---- OPTIMIZATION: threads, not processes -------------------------------------------------
+# Measured on 40 FOVs (data/results/pipeline-runtime/README.md):
+#
+#                     local FOVs      GCS-streamed FOVs
+#   Pool(2) processes   0.493 s/FOV      0.952 s/FOV
+#   ThreadPool(4)       0.267 s/FOV      0.715 s/FOV   <- best for GCS
+#   ThreadPool(8)       0.206 s/FOV      0.856 s/FOV   <- best for local
+#
+# Threads win on both counts because the work releases the GIL almost throughout: blob
+# downloads are network IO, and the compute is cv2/numpy calls. They also share one address
+# space, which is why 8 of them fit on a machine where Pool(4) ran out of memory outright --
+# each *process* worker transiently holds two float32 copies of a 7.84M-pixel image.
+#
+# GCS prefers 4 and local prefers 8: past 4 concurrent streams the per-thread storage.Client
+# connections stop paying for themselves. `_gcs_client()` already keys clients by thread
+# (threading.local) precisely so a thread pool is safe here.
+# ------------------------------------------------------------------------------------------
+    pool_cls = ThreadPool if args.pool == "thread" else Pool
+    with pool_cls(args.workers) as pool:
         results = pool.map(partial(_score_one, lbp_step=args.lbp_step,
-                                          blur_downsample=args.blur_downsample), rows)
+                                   blur_downsample=args.blur_downsample), rows)
 
     write_csv_dicts(args.out, FIELDNAMES, results)
     print(f"wrote {len(results)} rows to {args.out} "
-          f"(lbp_step={args.lbp_step}, blur_downsample={args.blur_downsample})")
+          f"(lbp_step={args.lbp_step}, blur_downsample={args.blur_downsample}, "
+          f"{args.workers} {args.pool}s)")
 
 
 if __name__ == "__main__":
