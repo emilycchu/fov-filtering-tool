@@ -9,6 +9,7 @@ Usage:
 """
 import argparse
 import json
+import re
 import sys
 
 import numpy as np
@@ -170,9 +171,45 @@ def stratified_folds(ord_values, k, seed):
     return fold_of
 
 
-def cross_validate(rows, feature_names, ord_key, levels, k=N_FOLDS, seed=KFOLD_SEED, alpha=RIDGE_ALPHA):
+def slide_of(row):
+    """The slide a labelled FOV came from, parsed out of its filename.
+
+    `dataset` is not the slide: `initial-071626` pools 13 FOVs from 9 different slides, while the
+    other two datasets are one slide each. Grouping needs the slide.
+    """
+    match = re.match(r"(?:dpc|fluorescent)-\d+-(.+?)\.(?:png|bmp|tiff?|jpe?g)$",
+                     row.get("filename", ""), re.IGNORECASE)
+    return match.group(1) if match else row.get("filename", "")
+
+
+def grouped_folds(rows, group_fn=slide_of):
+    """One fold per group -- leave-one-slide-out.
+
+    Why this exists: `stratified_folds` splits *FOVs*, and 648 of the 661 calibration FOVs come
+    from two slides. So for almost every held-out FOV, ~250 FOVs of the same slide -- same patient,
+    stain, scanner and session -- sit in the training fold. Measured on the 271-slide cohort,
+    within-slide score spread (median std 0.076) is smaller than between-slide spread (0.140), i.e.
+    those are near-duplicates, and the resulting estimate answers "how well does this do on another
+    FOV of a slide it has already seen" rather than "on a new slide". The tool is deployed per
+    slide, so the second question is the operational one.
+
+    Returns (fold_of, group_names) with group_names[i] naming fold i.
+    """
+    groups = [group_fn(r) for r in rows]
+    order = sorted(set(groups))
+    index = {name: i for i, name in enumerate(order)}
+    return np.array([index[g] for g in groups], dtype=int), order
+
+
+def cross_validate(rows, feature_names, ord_key, levels, k=N_FOLDS, seed=KFOLD_SEED,
+                   alpha=RIDGE_ALPHA, fold_of=None):
+    """`fold_of=None` keeps the historical FOV-stratified split, so every existing caller and
+    every recorded metric is unchanged. Pass a precomputed assignment (see `grouped_folds`) to
+    evaluate under a different split without duplicating the fitting logic."""
     ord_values = np.array([r[ord_key] for r in rows])
-    fold_of = stratified_folds(ord_values, k, seed)
+    if fold_of is None:
+        fold_of = stratified_folds(ord_values, k, seed)
+    k = int(fold_of.max()) + 1
 
     oof_pred_idx = np.full(len(rows), -1, dtype=int)
     oof_raw = np.full(len(rows), np.nan)
@@ -199,8 +236,17 @@ def cross_validate(rows, feature_names, ord_key, levels, k=N_FOLDS, seed=KFOLD_S
         oof_pred_idx[test_mask] = pred_idx[test_mask]
         oof_raw[test_mask] = raw_all[test_mask]
 
-        rho, _ = spearmanr(raw_all[test_mask], ord_values[test_mask])
-        fold_rhos.append(float(rho))
+        # Under leave-one-slide-out some folds hold 1-4 FOVs, where a rank correlation is
+        # undefined (or degenerate if every held-out FOV shares a label). Those folds still
+        # contribute their out-of-fold predictions to the aggregate; only their own rho is
+        # skipped, so a NaN here never silently becomes a 0 in the mean.
+        held = raw_all[test_mask]
+        held_ord = ord_values[test_mask]
+        if len(held) >= 3 and len(set(held_ord.tolist())) >= 2:
+            rho, _ = spearmanr(held, held_ord)
+            fold_rhos.append(float(rho))
+        else:
+            fold_rhos.append(float("nan"))
 
     return oof_pred_idx, oof_raw, fold_rhos
 
