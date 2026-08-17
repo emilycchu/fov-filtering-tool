@@ -1,0 +1,62 @@
+{
+ "cpu_count": 32,
+ "params_version": "v2.2-optimized",
+ "fovs_per_config": 128,
+ "results": [
+  {
+   "procs": 1,
+   "threads": 4,
+   "fov_per_s": 7.719521601265926,
+   "elapsed_s": 16.58133840560913,
+   "n": 128
+  },
+  {
+   "procs": 1,
+   "threads": 8,
+   "fov_per_s": 14.3494979782389,
+   "elapsed_s": 8.920172691345215,
+   "n": 128
+  },
+  {
+   "procs": 1,
+   "threads": 16,
+   "fov_per_s": 13.831271450227229,
+   "elapsed_s": 9.254391431808472,
+   "n": 128
+  },
+  {
+   "procs": 1,
+   "threads": 24,
+   "fov_per_s": 11.364532220332054,
+   "elapsed_s": 11.26311206817627,
+   "n": 128
+  },
+  {
+   "procs": 2,
+   "threads": 8,
+   "fov_per_s": 20.221037519345018,
+   "elapsed_s": 12.660082340240479,
+   "n": 256
+  },
+  {
+   "procs": 4,
+   "threads": 8,
+   "fov_per_s": 25.899164924967227,
+   "elapsed_s": 19.768977165222168,
+   "n": 512
+  },
+  {
+   "procs": 8,
+   "threads": 8,
+   "fov_per_s": 29.749088500381845,
+   "elapsed_s": 34.42122268676758,
+   "n": 1024
+  }
+ ],
+ "best": {
+  "procs": 8,
+  "threads": 8,
+  "fov_per_s": 29.749088500381845
+ },
+ "projected_dpc_hours": 0.819810365309111
+}

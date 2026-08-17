@@ -26,3 +26,10 @@ crowding-crenation/data/results/nigeria-081226/fov-thumbnails-v2.2-optimized.png
 # the two blur-derived columns swapped. sweep_blur_downsample.py --analyze regenerates them
 # in seconds from the committed blur-variants.csv.
 crowding-crenation/data/results/pipeline-runtime/features-blur-ds*.csv
+
+# Annotatability catalog workbook (source of the Tanzania/Liberia/Uganda slide lists). Deliberately
+# untracked: it is a shared clinical spreadsheet owned outside this repo, containing PCR-vs-microscopy
+# truth for ~700 slides across three countries. scripts/tanzania-complete-081426/catalog.py reads it
+# from this path, and build_slide_index.py distils the parts this analysis needs into the tracked
+# slides.csv / slide-index.json, so the pipeline is reproducible without publishing the workbook.
+crowding-crenation/data/labels/tanzania-081426/*.xlsx

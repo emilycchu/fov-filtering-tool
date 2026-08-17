@@ -197,11 +197,21 @@ def _ug_spots_blob_name(sample_id):
     return f"samples/{sample_id}/spots.csv"
 
 
-def load_slide_metric_counts(sample_id, country, metric="n_spots_detected"):
-    """Return {fov_id: count} for every FOV on this slide with detection results, for either
-    `metric` ("n_spots_detected" or "n_positives" -- see module docstring), or None if this
-    sample has no detection results at all. Cached per (country, sample_id, metric) since
-    several labeled rows in the diverse test set share a slide.
+def load_slide_metric_counts_with_source(sample_id, country, metric="n_spots_detected"):
+    """As `load_slide_metric_counts`, but also reports which layout actually resolved:
+
+        "lb_detection"      | detection_results/LB25-<batch>/<model>/<slide>/fov_summary.csv
+        "tz_detection"      | detection_results/<model>/<sample>/fov_summary.csv
+        "annotation_bucket" | samples/<sample>/fov_summary.csv  (the Tanzania fallback)
+        "ug_spots"          | samples/<sample>/spots.csv, aggregated
+        "none"              | no detection results anywhere
+
+    The primary-vs-fallback decision used to be made here and then discarded. That is fine for
+    one labeled FOV and not fine for a 271-slide sweep: only 187 of the Tanzania catalog slides
+    have results under `TZ_MODEL_VERSION`, and the other 84 resolve from the annotation bucket,
+    which a different (older) detector produced. The robust z-score is computed *within* a
+    slide, so that difference largely cancels -- but "largely" is a claim that has to stay
+    auditable, so the source travels with the counts.
     """
     if metric not in METRICS:
         raise ValueError(f"Unknown metric: {metric!r}, expected one of {METRICS}")
@@ -216,22 +226,64 @@ def load_slide_metric_counts(sample_id, country, metric="n_spots_detected"):
     if key_country == "lb":
         text = _try_download_text(LB_BUCKET, _lb_fov_summary_blob_name(sample_id))
         counts = _parse_fov_summary_csv(text, metric) if text is not None else None
+        source = "lb_detection" if counts is not None else "none"
     elif key_country == "tz":
         text = _try_download_text(TZ_BUCKET, _tz_fov_summary_blob_name(sample_id))
+        source = "tz_detection"
         if text is None:
             # fallback: the annotation tool's bucket has fov_summary.csv for slides never
             # mirrored into tanzania_02032026's own detection_results/ tree -- see module
             # docstring's Tanzania fallback note.
             text = _try_download_text(UG_BUCKET, _annotation_fov_summary_blob_name(sample_id))
+            source = "annotation_bucket"
         counts = _parse_fov_summary_csv(text, metric) if text is not None else None
+        if counts is None:
+            source = "none"
     elif key_country == "ug":
         text = _try_download_text(UG_BUCKET, _ug_spots_blob_name(sample_id))
         counts = _parse_spots_csv_counts(text, metric) if text is not None else None
+        source = "ug_spots" if counts is not None else "none"
     else:
         raise AssertionError(key_country)  # unreachable, all _COUNTRY_ALIASES values handled above
 
-    _slide_cache[cache_key] = counts
+    _slide_cache[cache_key] = (counts, source)
+    return counts, source
+
+
+def load_slide_metric_counts(sample_id, country, metric="n_spots_detected"):
+    """Return {fov_id: count} for every FOV on this slide with detection results, for either
+    `metric` ("n_spots_detected" or "n_positives" -- see module docstring), or None if this
+    sample has no detection results at all. Cached per (country, sample_id, metric) since
+    several labeled rows in the diverse test set share a slide.
+    """
+    counts, _source = load_slide_metric_counts_with_source(sample_id, country, metric)
     return counts
+
+
+def robust_zscore(target_count, stats):
+    """(target - median) / scaled-MAD from `slide_baseline`, or None if the MAD is unusable.
+
+    The single definition of this statistic. It was open-coded identically in
+    analyze_crop_outliers.py, analyze_boundary_negatives.py and case_study_ktr72502946.py, and
+    it belongs next to `slide_baseline`, which produces its input.
+
+    A zero MAD means more than half a slide's FOVs share the median count, so "how many MADs
+    away" has no meaning. Returning None rather than an infinity forces the caller to decide,
+    instead of silently flagging every FOV or silently flagging none.
+    """
+    mad = stats.get("mad")
+    median = stats.get("median")
+    if not mad or median is None:
+        return None
+    return (target_count - median) / mad
+
+
+def ratio_to_median(target_count, stats):
+    """target / median, or None when the median is zero or undefined."""
+    median = stats.get("median")
+    if not median:
+        return None
+    return target_count / median
 
 
 def slide_baseline(counts):
