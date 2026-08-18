@@ -1,23 +1,36 @@
 """The runnable v2 tool: score a new FOV image or directory of images for density and
-Rouleaux (overlap) severity, using the weights/thresholds calibrate_v2.py fit against the
-337-FOV manual annotation set (density_overlap_v2_params.json). Unlike
+Rouleaux (overlap) severity, using the weights/thresholds fit by calibration. Unlike
 scripts/ai-first/label_new_slide.py's slide-relative quintiles, these thresholds are fixed
 ahead of time, so this generalizes to a new slide without re-deriving anything per slide.
 
 Usage:
-    python scripts/combined/score_fov_v2.py <input> [--params PATH] [--out-csv PATH] [--workers N]
+    python scripts/combined/score_fov_v2.py <input> [--params PATH] [--out-csv PATH]
+        [--workers N] [--pool thread|process]
 
 <input> is a single image file or a directory of images (local path or gs:// URI).
 Without --out-csv, results are printed as JSON to stdout (matching src/pipeline.py's CLI).
+
+--params defaults to the **v2.2-optimized** fit (661 FOVs). It used to default to the original
+v2 fit (337 FOVs, superseded twice over), which meant a bare invocation silently scored with
+the weakest available calibration -- masked only by every documented example passing --params
+explicitly.
+
+The default carrying `lbp_step`/`blur_downsample` is safe rather than risky: those live in the
+params file and every inference path reads them back (`lbp_step_from_params`,
+`blur_downsample_from_params`), so the features are always computed the way the fit they are
+being scored against was built. Pass density_overlap_v2.2_params.json for the full-resolution
+v2.2 fit.
 """
 import argparse
 import json
 from multiprocessing import Pool
+from multiprocessing.pool import ThreadPool
 from pathlib import Path
 
 from _v2_common import (
-    PARAMS_JSON,
+    DEFAULT_SCORING_PARAMS,
     apply_label_overrides,
+    blur_downsample_from_params,
     compute_features,
     lbp_step_from_params,
     list_image_paths,
@@ -40,10 +53,14 @@ def _score_axis(features, axis_params):
 
 
 def score_image_v2(path, params):
-    image = load_image(path)
-    # The stride comes from the params file, never from a local default -- a fit made on
-    # subsampled LBP entropy has to be scored the same way.
-    features = compute_features(image, lbp_step=lbp_step_from_params(params))
+    # grayscale=True is bit-identical and skips decoding three identical channels --
+    # every FOV in this repo is already monochrome. See src/pipeline.py::load_image.
+    image = load_image(path, grayscale=True)
+    # Both runtime knobs come from the params file, never from a local default -- a fit made
+    # on subsampled LBP entropy or a downsampled illumination background has to be scored the
+    # same way, and only the fit knows which it was.
+    features = compute_features(image, lbp_step=lbp_step_from_params(params),
+                                blur_downsample=blur_downsample_from_params(params))
 
     density_score, density_label = _score_axis(features, params["density"])
     overlap_score, overlap_label = _score_axis(features, params["overlap"])
@@ -69,7 +86,7 @@ def _score_one(args):
         return {"filename": Path(str(path)).name, "path": str(path), "error": str(e)}
 
 
-def score_path(input_path, params, workers=1):
+def score_path(input_path, params, workers=1, pool="thread"):
     from src.pipeline import IMAGE_EXTENSIONS, is_gcs_path, to_dir
 
     if is_gcs_path(input_path):
@@ -81,9 +98,17 @@ def score_path(input_path, params, workers=1):
         paths = [p] if p.is_file() else list_image_paths(p)
 
     if workers > 1:
-        with Pool(workers) as pool:
-            return pool.map(_score_one, [(p, params) for p in paths])
-    return [_score_one((p, params)) for p in paths]
+        # ---- OPTIMIZATION: threads, not processes -----------------------------------------
+        # The work releases the GIL almost throughout -- blob downloads are network IO and the
+        # compute is cv2/numpy -- so threads parallelize it while sharing one address space.
+        # Measured 2.4x faster than a process pool on local FOVs and 1.3x on GCS-streamed
+        # ones, and light enough on memory to run 8 where Pool(4) ran out. See
+        # data/results/pipeline-runtime/README.md.
+        # -----------------------------------------------------------------------------------
+        pool_cls = ThreadPool if pool == "thread" else Pool
+        with pool_cls(workers) as p:
+            return p.map(_score_one, [(path, params) for path in paths])
+    return [_score_one((path, params)) for path in paths]
 
 
 def write_csv(rows, out_csv):
@@ -103,13 +128,19 @@ def write_csv(rows, out_csv):
 def main():
     parser = argparse.ArgumentParser(description="Score FOV images for density and Rouleaux severity.")
     parser.add_argument("input", help="Image file or directory of images (local path or gs:// URI).")
-    parser.add_argument("--params", default=str(PARAMS_JSON))
+    parser.add_argument("--params", default=str(DEFAULT_SCORING_PARAMS),
+                        help="calibrated params JSON; defaults to the v2.2-optimized fit "
+                             "(661 FOVs, ~12x faster per FOV, accuracy unchanged). Pass "
+                             "density_overlap_v2.2_params.json for the full-resolution v2.2 fit")
     parser.add_argument("--out-csv", default=None)
-    parser.add_argument("--workers", type=int, default=1)
+    parser.add_argument("--workers", type=int, default=1,
+                        help="8 suits local images; 4 is faster for GCS-streamed ones")
+    parser.add_argument("--pool", choices=("thread", "process"), default="thread",
+                        help="thread (default) is ~2.4x faster and far lighter on memory")
     args = parser.parse_args()
 
     params = load_params(args.params)
-    results = score_path(args.input, params, workers=args.workers)
+    results = score_path(args.input, params, workers=args.workers, pool=args.pool)
 
     if args.out_csv:
         write_csv(results, args.out_csv)

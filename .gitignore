@@ -20,3 +20,9 @@ crowding-crenation/data/results/lbp-runtime/features-v2.2-step*.csv
 # for v2.2, differing only in the predicted-bucket captions. 3.3 MB each; nigeria_081226.py
 # regenerates them, and the finding they support is a table in lbp-runtime/README.md.
 crowding-crenation/data/results/nigeria-081226/fov-thumbnails-nolbp*.png
+crowding-crenation/data/results/nigeria-081226/fov-thumbnails-v2.2-optimized.png
+
+# Derived per-factor feature CSVs from the blur sweep: features-v2.2-optimized.csv with only
+# the two blur-derived columns swapped. sweep_blur_downsample.py --analyze regenerates them
+# in seconds from the committed blur-variants.csv.
+crowding-crenation/data/results/pipeline-runtime/features-blur-ds*.csv

@@ -16,6 +16,7 @@ from scipy.stats import binomtest, spearmanr
 
 from _v2_common import (
     AXIS_DISPLAY_NAMES,
+    DEFAULT_BLUR_DOWNSAMPLE,
     DEFAULT_LBP_STEP,
     DENSITY_LEVELS,
     EMPTY_FIELD_FEATURES,
@@ -390,9 +391,11 @@ def empty_field_block(density_result):
     }
 
 
-def write_params_json(out_path, density_result, overlap_result, n_fovs, lbp_step=DEFAULT_LBP_STEP):
-    """`lbp_step` is recorded, not just used: score_fov_v2.py reads it back so a fit made on
-    subsampled LBP entropy can only ever be scored against subsampled LBP entropy."""
+def write_params_json(out_path, density_result, overlap_result, n_fovs,
+                      lbp_step=DEFAULT_LBP_STEP, blur_downsample=DEFAULT_BLUR_DOWNSAMPLE):
+    """Both runtime knobs are recorded, not just used: score_fov_v2.py reads them back, so a
+    fit made on subsampled LBP entropy or a downsampled illumination background can only ever
+    be scored the same way. Omitting them would let calibration and inference silently differ."""
     def axis_block(res, levels):
         return {
             "feature_names": res["feature_names"],
@@ -407,6 +410,7 @@ def write_params_json(out_path, density_result, overlap_result, n_fovs, lbp_step
         "generated_from": "data/results/density-rouleaux-v2/features.csv",
         "n_fovs": n_fovs,
         "lbp_step": lbp_step,
+        "blur_downsample": blur_downsample,
         "density": axis_block(density_result, DENSITY_LEVELS),
         "overlap": axis_block(overlap_result, OVERLAP_LEVELS),
         "saturation_override": {

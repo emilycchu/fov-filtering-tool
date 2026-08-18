@@ -1,39 +1,59 @@
-"""v2.2-lb-optimized: the v2.2 fit, recalibrated on stride-16 LBP entropy.
+"""v2.2-optimized: the v2.2 fit, recalibrated on the two runtime-optimized features.
 
-Same 661 FOVs and the same full-feature-pool fitting as calibrate_v2.2.py. The only thing
-that changes is how `lbp_entropy` is computed: on a stride-16 grid of centre pixels rather
-than every pixel, which takes 0.07s per FOV instead of 4.80s and drops the whole
-`compute_features` vector from 5.85s to ~1.08s.
+Same 661 FOVs and the same full-feature-pool fitting as calibrate_v2.2.py. Two things change,
+and each moves exactly one part of the feature vector:
+
+- `lbp_entropy` is computed on a **stride-16** grid of centre pixels rather than every pixel:
+  0.07s per FOV instead of 4.80s.
+- the illumination background is estimated on a **4x downsampled** copy:
+  `correct_illumination` drops from 0.77s to 0.12s, moving only `tile_glcm_cv` and
+  `tile_glcm_patchiness`.
+
+Together with converting to grey once instead of six times, `compute_features` goes from 5.85s
+to ~0.58s per FOV -- about 10x.
 
 Why refit at all, when the drift changes no labels? Because the fit should describe the
-feature the pipeline actually computes. Scoring stride-16 features against v2.2's
-full-resolution params happens to give identical buckets on all 661 calibration FOVs, but
-that is a measured coincidence of this dataset, not a guarantee -- the fitted weights and the
-p2/p98 normalization band both shift in the 4th decimal, and the empty-field gate's floor is
-literally a percentile of lbp_entropy. Refitting makes the params self-consistent instead of
-relying on the drift staying small on data nobody has seen yet.
+features the pipeline actually computes. Scoring optimized features against v2.2's
+full-resolution params happens to give identical buckets on all 661 calibration FOVs, but that
+is a measured property of this dataset, not a guarantee -- the fitted weights and the p2/p98
+normalization bands shift in the 4th decimal, and the empty-field gate's floors are literally
+percentiles of lbp_entropy and three other features. Refitting makes the params
+self-consistent instead of relying on the drift staying small on data nobody has seen yet.
 
-The params JSON records `lbp_step: 16`, and score_fov_v2.py / nigeria_081226.py read it back
-(`_v2_common.lbp_step_from_params`), so this fit can only be scored against stride-16
-features. Older params files have no `lbp_step` key and score at full resolution as before.
+The params JSON records `lbp_step: 16` and `blur_downsample: 4`, and score_fov_v2.py /
+nigeria_081226.py read both back (`_v2_common.lbp_step_from_params`,
+`blur_downsample_from_params`), so this fit can only be scored against matching features.
+Older params files have neither key and score at full resolution as before.
 
-Evidence for the stride: data/results/lbp-runtime/README.md -- 71x faster, zero label
-changes across all 661 FOVs, off-by-one unchanged, and the empty-field gate still firing on
-exactly its 3 FOVs.
+Evidence, both established before adoption and both sweeps run over all 661 FOVs:
+
+- stride: data/results/lbp-runtime/README.md -- 71x faster, zero label changes, off-by-one
+  unchanged, gate still firing on exactly its 3 FOVs.
+- blur: data/results/pipeline-runtime/README.md -- 6.4x, zero label changes at downsample 4.
+  Note downsample **2** is the one factor that does flip labels (4 correct Rouleaux
+  predictions lost), so the chosen factor is not simply "the most conservative one".
 
 Inputs are built by:
     python scripts/combined/extract_features_v2.py --labels-csv <merged-labels-v2.2.csv> \
-        --out <features-v2.2-lb-optimized.csv> --lbp-step 16 --workers 4
+        --out <features-v2.2-optimized.csv> --lbp-step 16 --workers 4
 
 Usage:
-    python scripts/combined/calibrate_v2.2-lb-optimized.py [--features-csv PATH]
+    python scripts/combined/calibrate_v2.2-optimized.py [--features-csv PATH]
         [--params-out PATH] [--report-out PATH] [--prev-params PATH] [--lbp-step N]
+        [--blur-downsample N]
 """
 import argparse
 import json
 from pathlib import Path
 
-from _v2_common import DENSITY_LEVELS, LBP_OPTIMIZED_STEP, OVERLAP_LEVELS, RESULTS_DIR, display_level
+from _v2_common import (
+    BLUR_OPTIMIZED_DOWNSAMPLE,
+    DENSITY_LEVELS,
+    LBP_OPTIMIZED_STEP,
+    OVERLAP_LEVELS,
+    RESULTS_DIR,
+    display_level,
+)
 from calibrate_v2 import (
     CANDIDATE_FEATURES,
     N_FOLDS,
@@ -46,8 +66,8 @@ from calibrate_v2 import (
     write_params_json,
 )
 
-FEATURES_CSV_LB = RESULTS_DIR / "features-v2.2-lb-optimized.csv"
-PARAMS_JSON_LB = RESULTS_DIR / "density_overlap_v2.2-lb-optimized_params.json"
+FEATURES_CSV_LB = RESULTS_DIR / "features-v2.2-optimized.csv"
+PARAMS_JSON_LB = RESULTS_DIR / "density_overlap_v2.2-optimized_params.json"
 PARAMS_JSON_V2_2 = RESULTS_DIR / "density_overlap_v2.2_params.json"
 REPORT_MD = RESULTS_DIR / "calibration-report.md"
 
@@ -67,7 +87,7 @@ def drift_section(density_result, overlap_result, prev_params, lbp_step):
                                    ("Rouleaux", overlap_result, "overlap")]:
         prev = prev_params[axis_key]
         lines.append(f"**{name}**\n\n")
-        lines.append("| feature | weight (v2.2) | weight (lb-optimized) | delta |\n|---|---|---|---|\n")
+        lines.append("| feature | weight (v2.2) | weight (optimized) | delta |\n|---|---|---|---|\n")
         for feature in result["feature_names"]:
             new = result["weights"][feature]
             old = prev["weights"].get(feature)
@@ -84,7 +104,7 @@ def drift_section(density_result, overlap_result, prev_params, lbp_step):
 
 def append_report_section(report_path, rows, density_result, overlap_result, independence,
                           sep_checks, prev_params, lbp_step, features_csv):
-    lines = ["\n---\n\n", "# v2.2-lb-optimized: the v2.2 fit on stride-16 LBP entropy\n\n"]
+    lines = ["\n---\n\n", "# v2.2-optimized: the v2.2 fit on stride-16 LBP entropy\n\n"]
     lines.append(
         f"Refit on the same {len(rows)} FOVs as v2.2, from `{Path(features_csv).name}`, with "
         f"`lbp_entropy` computed on a stride-{lbp_step} centre grid. This is a runtime change, "
@@ -95,7 +115,7 @@ def append_report_section(report_path, rows, density_result, overlap_result, ind
 
     for name, result, levels in [("Density", density_result, DENSITY_LEVELS),
                                  ("Rouleaux", overlap_result, OVERLAP_LEVELS)]:
-        lines.append(f"## {name} composite (v2.2-lb-optimized)\n\n")
+        lines.append(f"## {name} composite (v2.2-optimized)\n\n")
         if result["dropped_sign_unstable_features"]:
             lines.append(f"Dropped for sign instability: {', '.join(result['dropped_sign_unstable_features'])}\n\n")
         lines.append("| feature | weight | range (2nd-98th pct) |\n|---|---|---|\n")
@@ -117,12 +137,12 @@ def append_report_section(report_path, rows, density_result, overlap_result, ind
 
     lines.extend(drift_section(density_result, overlap_result, prev_params, lbp_step))
 
-    lines.append("## Composite independence (v2.2-lb-optimized)\n\n")
+    lines.append("## Composite independence (v2.2-optimized)\n\n")
     lines.append(f"Spearman rho between the two fitted composite scores: "
                  f"**{independence['composite_rho']:.3f}**, vs. the true manual "
                  f"density-vs-Rouleaux label correlation of **{independence['manual_label_rho']:.3f}**.\n\n")
 
-    lines.append("## Axis-separation check (v2.2-lb-optimized)\n\n")
+    lines.append("## Axis-separation check (v2.2-optimized)\n\n")
     lines.append("| min |delta| | n | sign matches | match rate | binomial p | Spearman rho |\n|---|---|---|---|---|---|\n")
     for sep_check in sep_checks:
         rate = f"{sep_check['sign_match_rate']:.1%}" if sep_check["sign_match_rate"] is not None else "n/a"
@@ -142,6 +162,8 @@ def main():
     parser.add_argument("--prev-params", default=str(PARAMS_JSON_V2_2))
     parser.add_argument("--lbp-step", type=int, default=LBP_OPTIMIZED_STEP,
                         help="must match the stride --features-csv was extracted with")
+    parser.add_argument("--blur-downsample", type=int, default=BLUR_OPTIMIZED_DOWNSAMPLE,
+                        help="must match the downsample --features-csv was extracted with")
     args = parser.parse_args()
 
     rows = load_features(args.features_csv)
@@ -163,9 +185,10 @@ def main():
         prev_params = json.loads(Path(args.prev_params).read_text())
 
     params_path = Path(args.params_out)
-    write_params_json(params_path, density_result, overlap_result, len(rows), lbp_step=args.lbp_step)
+    write_params_json(params_path, density_result, overlap_result, len(rows),
+                      lbp_step=args.lbp_step, blur_downsample=args.blur_downsample)
     data = json.loads(params_path.read_text())
-    data["version"] = "v2.2-lb-optimized"
+    data["version"] = "v2.2-optimized"
     data["generated_from"] = args.features_csv
     params_path.write_text(json.dumps(data, indent=2))
 
@@ -181,7 +204,8 @@ def main():
     gate = json.loads(params_path.read_text())["empty_field_override"]
     print(f"empty-field gate: {'enabled' if gate['enabled'] else 'DISABLED'} "
           f"over {len(gate['thresholds'])} features")
-    print(f"lbp_step={args.lbp_step} recorded in {params_path.name}")
+    print(f"lbp_step={args.lbp_step}, blur_downsample={args.blur_downsample} "
+          f"recorded in {params_path.name}")
     print(f"appended to {args.report_out}")
 
 

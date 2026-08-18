@@ -6,10 +6,15 @@ weight and **none** of the Rouleaux composite's. This directory is the measureme
 ways to make that cheaper, all on branch `lbp-runtime-optimization`, all against the full
 661-FOV v2.2 calibration set.
 
-**Adopted:** the bit-identical exact kernel, and stride-16 as the calibrated fit
-**`v2.2-lb-optimized`** (`scripts/combined/calibrate_v2.2-lb-optimized.py`) — see "Adopted"
+**Adopted:** the bit-identical exact kernel, and stride-16 as part of the calibrated fit
+**`v2.2-optimized`** (`scripts/combined/calibrate_v2.2-optimized.py`) — see "Adopted"
 at the bottom. `compute_features` now takes an `lbp_step`, recorded in the params JSON so
 inference can only ever score at the stride its fit used.
+
+That fit later picked up a second knob from the same playbook — a 4x-downsampled illumination
+background, which was 60% of per-FOV cost once LBP was dealt with. See
+`data/results/pipeline-runtime/README.md`; the numbers in *this* file are LBP-only, so
+`compute_features` totals here predate that change.
 
 **Not adopted:** removing LBP. `EMPTY_FIELD_FEATURES` still lists all four features, and no
 v2.2 artifact was overwritten — the no-LBP arm remains measurement only.
@@ -209,13 +214,13 @@ So `lbp_entropy` was the *binding* condition holding the gate back on 4 truly-sp
 Enabling a 3-of-3 gate is a deliberate decision that `empty_field_block` refuses to make
 automatically, and it should stay that way — but the measurement says it is defensible here.
 
-## Adopted: v2.2-lb-optimized
+## Adopted: v2.2-optimized
 
 Stride-16 is now a calibrated fit, not just a measurement. Same 661 FOVs, same candidate pool,
 same ridge/PAVA procedure as v2.2 — the only difference is that `lbp_entropy` is computed on a
 stride-16 centre grid.
 
-| | v2.2 | v2.2-lb-optimized |
+| | v2.2 | v2.2-optimized |
 |---|---|---|
 | `compute_features` per FOV | 5.85 s | **1.03 s** (5.7x) |
 | density OOF exact / off-by-one | 69.4% / 98.0% | **69.4% / 98.0%** |
@@ -249,7 +254,7 @@ that calibration and inference cannot diverge.
    enabled to hold Nigeria at 8/8. Worth revisiting at the v2.3 refit, when the deferred
    669-FOV set pools in the very FOVs the gate targets.
 3. **`check_empty_field_gate.py` now takes `--expect-exact`.** Its hardcoded v2.2 baselines
-   fail on any legitimate refit; v2.2-lb-optimized passes with `--expect-exact 0.6959 0.6838`.
+   fail on any legitimate refit; v2.2-optimized passes with `--expect-exact 0.6959 0.6838`.
 
 ## Reproducing
 
@@ -272,9 +277,9 @@ python scripts/combined/lbp-optimization/plot_lbp_variants.py
 # 6. the adopted fit: extract at stride 16, then refit
 python scripts/combined/extract_features_v2.py \
     --labels-csv data/results/density-rouleaux-v2/merged-labels-v2.2.csv \
-    --out data/results/density-rouleaux-v2/features-v2.2-lb-optimized.csv \
+    --out data/results/density-rouleaux-v2/features-v2.2-optimized.csv \
     --lbp-step 16 --workers 4
-python scripts/combined/calibrate_v2.2-lb-optimized.py
+python scripts/combined/calibrate_v2.2-optimized.py
 
 # 7. gate checks and the Nigeria OOD run
 python scripts/combined/check_empty_field_gate.py --features features-v2.2-step16.csv \

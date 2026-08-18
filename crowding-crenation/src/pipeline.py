@@ -80,7 +80,27 @@ def to_dir(directory):
     return Path(directory)
 
 
-def load_image(path):
+def load_image(path, grayscale=False):
+    """Read an image from a local path or a gs:// blob.
+
+    ---- OPTIMIZATION: `grayscale` -------------------------------------------------------
+    Every FOV this repo processes is **already monochrome** -- all three channels equal, in
+    the Tanzania PNGs, the Liberia PNGs and the Nigeria BMPs alike. Decoding colour therefore
+    pushes three identical channels through libpng and hands back an array the whole v2
+    feature vector immediately averages back to grey. `grayscale=True` skips that: 0.18s ->
+    0.14s per 2800x2800 FOV, and it lets `compute_features` skip its conversion too.
+
+    It is **bit-identical**, not approximately equal: verified against
+    `cvtColor(imread(...), BGR2GRAY)` on 8 local FOVs across all three datasets, on
+    GCS-streamed bytes, and on all 661 calibration FOVs (that check is what
+    `pipeline-runtime/sweep_blur_downsample.py`'s downsample=1 baseline proves, since it
+    loads grayscale where compute_features converts from colour).
+
+    Default stays False because callers that render images still want colour --
+    `nigeria_081226.py`'s thumbnail sheet does a BGR2RGB. See
+    data/results/pipeline-runtime/README.md.
+    -------------------------------------------------------------------------------------
+    """
     if isinstance(path, GCSPath):
         gcs_path = path
     elif is_gcs_path(path):
@@ -88,12 +108,13 @@ def load_image(path):
     else:
         gcs_path = None
 
+    flag = cv2.IMREAD_GRAYSCALE if grayscale else cv2.IMREAD_COLOR
     if gcs_path is not None:
         blob = _gcs_client().bucket(gcs_path.bucket).blob(gcs_path.blob_name)
         data = blob.download_as_bytes()
-        image = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_COLOR)
+        image = cv2.imdecode(np.frombuffer(data, np.uint8), flag)
     else:
-        image = cv2.imread(str(path))
+        image = cv2.imread(str(path), flag)
     if image is None:
         raise FileNotFoundError(f"Could not read image: {path}")
     return image

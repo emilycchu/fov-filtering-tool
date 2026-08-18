@@ -1,13 +1,23 @@
-"""Experimental, unvalidated downsampled variant of lbp_entropy().
+"""SUPERSEDED. Downsampled variant of lbp_entropy(); measured, and the drift is too large.
 
-Striding the image before computing LBP is ~16x faster at downsample=4, but it changes
-the effective spatial texture scale, not just the runtime -- so it also changes the
-numeric output. composite_score() (src/composite.py) is calibrated against
-lbp_entropy()'s exact current output on the 13-FOV labeled set
-(data/results/initial-dataset-071626/), so this module must NOT be imported by
-src/pipeline.py, score_image(), or any calibrated batch script until that calibration
-has been explicitly revalidated against the new numbers. Use
-scripts/compare_lbp_entropy_fast.py to measure the drift first.
+Use `lbp_entropy(image, step=N)` instead (src/features/lbp_entropy.py). It subsamples the
+grid of *centre* pixels while still sampling neighbours at the full-resolution radius, so
+the LBP codes stay bit-identical to the corresponding pixels of the full map and only the
+histogram is estimated from a subsample. This module downsamples the *image*, which changes
+the operator's spatial scale -- a different feature, not a faster one.
+
+The drift the original version of this docstring asked someone to go measure has now been
+measured, on 9 FOVs, against a calibrated feature range of [3.118, 4.196] (span 1.078):
+
+    downsample=2  ->  -0.60 mean drift   (56% of the range)
+    downsample=4  ->  -1.52 mean drift  (141% of the range)
+
+versus 0.009 for stride-16 centre subsampling, which is 71x faster than full resolution and
+changes none of the 1322 bucket assignments on the 661-FOV v2.2 calibration set. See
+data/results/lbp-runtime/README.md.
+
+Kept only because scripts/compare_lbp_entropy_fast.py still imports it to reproduce those
+numbers. Do not import it anywhere else, and do not wire it into a calibrated path.
 
 downsample=1 degenerates to the exact original lbp_entropy() (used as a correctness check).
 """

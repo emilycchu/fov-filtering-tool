@@ -62,7 +62,22 @@ FEATURES_CSV = RESULTS_DIR / "features.csv"
 LBP_RUNTIME_DIR = ROOT / "data" / "results" / "lbp-runtime"
 LBP_VARIANTS_CSV = LBP_RUNTIME_DIR / "lbp-variants.csv"
 LBP_COMPARISON_CSV = LBP_RUNTIME_DIR / "variant-comparison.csv"
+# The original v2 fit's home. This is calibrate_v2.py's `--params-out` **write** target, not a
+# "current params" pointer -- repointing it would make a bare `calibrate_v2.py` run overwrite
+# whichever fit it named. Consumers that only *read* a fit should use DEFAULT_SCORING_PARAMS.
 PARAMS_JSON = RESULTS_DIR / "density_overlap_v2_params.json"
+# What a tool defaults to when it is handed no --params: the current recommended fit. It used
+# to be the original v2 fit (337 FOVs, superseded twice over), so a bare invocation silently
+# scored with the weakest available calibration -- masked only by every documented example
+# passing --params explicitly.
+#
+# v2.2-optimized is the same 661-FOV fit as v2.2 on the same procedure, differing only in that
+# lbp_entropy uses a stride-16 centre grid and the illumination background is estimated 4x
+# downsampled: ~12x faster per FOV, out-of-fold accuracy unchanged on both axes, one knife-edge
+# label difference in 661, and 8/8 on the out-of-distribution Nigeria stain. Its lbp_step and
+# blur_downsample are recorded in the file and read back by every inference path, so defaulting
+# to it cannot silently mismatch features against weights.
+DEFAULT_SCORING_PARAMS = RESULTS_DIR / "density_overlap_v2.2-optimized_params.json"
 REPORT_MD = RESULTS_DIR / "calibration-report.md"
 PLOTS_DIR = RESULTS_DIR / "plots"
 
@@ -96,6 +111,15 @@ OVERLAP_TAGS = {
 TILE_GRID_SIZE = 7
 TILE_GLCM_LEVELS = 32
 
+# ---- OPTIMIZATION KNOBS ------------------------------------------------------------------
+# Two runtime parameters, both defaulting to the original full-resolution behaviour and both
+# recorded in the params JSON rather than hardcoded at call sites. The reason they are
+# recorded is the invariant in this module's docstring: a composite fit on subsampled
+# features has to be scored on subsampled features, so the fit is the only thing entitled to
+# say which setting was used. See lbp_step_from_params / blur_downsample_from_params.
+# Evidence: data/results/lbp-runtime/README.md and data/results/pipeline-runtime/README.md.
+# ------------------------------------------------------------------------------------------
+
 # LBP centre-grid stride. 1 = full resolution, what v2/v2.1/v2.2 were fit on.
 DEFAULT_LBP_STEP = 1
 # The validated fast stride: 71x faster than full resolution (0.07s vs 4.80s per FOV) and,
@@ -103,6 +127,15 @@ DEFAULT_LBP_STEP = 1
 # assignments. Going further saves nothing -- correct_illumination's 301px blur becomes the
 # bottleneck at this point. See data/results/lbp-runtime/README.md.
 LBP_OPTIMIZED_STEP = 16
+
+# Illumination-background downsample. 1 = full-resolution 301-px blur, as v2/v2.1/v2.2.
+DEFAULT_BLUR_DOWNSAMPLE = 1
+# The validated fast factor: 6.4x on `correct_illumination` (0.77s -> 0.12s) and, measured
+# across all 661 calibration FOVs, zero label changes on either axis. Deliberately NOT 2 --
+# 2 is the only factor in the sweep that flips anything (4 correct Rouleaux predictions lost),
+# and NOT 8 or 16, which are no faster because of the float32 tail. See
+# data/results/pipeline-runtime/README.md and src/segmentation.py::correct_illumination.
+BLUR_OPTIMIZED_DOWNSAMPLE = 4
 
 # dataviz palette (references/palette.md), matching scripts/tanzania_comparison.py
 JITTER_SEED = 7
@@ -171,23 +204,46 @@ def lbp_step_from_params(params):
     return int(params.get("lbp_step", DEFAULT_LBP_STEP))
 
 
-def compute_features(image, lbp_step=DEFAULT_LBP_STEP):
-    """The full candidate feature vector for one FOV image (BGR, as returned by load_image).
+def blur_downsample_from_params(params):
+    """The illumination-background downsample a params file was fit with.
+
+    Absent means the fit predates the knob (v2, v2.1, v2.2), which means full resolution.
+    Same contract as lbp_step_from_params: inference must read it rather than assume, or a
+    fit made on a downsampled background gets scored against a full-resolution one.
+    """
+    return int(params.get("blur_downsample", DEFAULT_BLUR_DOWNSAMPLE))
+
+
+def compute_features(image, lbp_step=DEFAULT_LBP_STEP, blur_downsample=DEFAULT_BLUR_DOWNSAMPLE):
+    """The full candidate feature vector for one FOV image (BGR or grayscale).
 
     Shared by extract_features_v2.py (calibration) and score_fov_v2.py (inference) so the
     two can never compute features differently.
 
-    `lbp_step` > 1 evaluates LBP on a subsampled centre grid -- much faster, and the only
-    feature it changes is lbp_entropy (see src/features/lbp_entropy.py). Pass it from the
-    params JSON via lbp_step_from_params() at inference time; do not hardcode it.
+    Both optimization knobs default to the original behaviour and change exactly one thing
+    each. `lbp_step` > 1 subsamples the LBP centre grid and moves only `lbp_entropy`
+    (src/features/lbp_entropy.py). `blur_downsample` > 1 estimates the illumination
+    background on a shrunken copy and moves only `tile_glcm_cv` / `tile_glcm_patchiness`,
+    the two features derived from `corrected` (src/segmentation.py::correct_illumination).
+    Pass both from the params JSON via lbp_step_from_params() /
+    blur_downsample_from_params(); do not hardcode them at a call site.
     """
+    # ---- OPTIMIZATION: convert to grey once ----------------------------------------------
+    # Every feature function below opens with `gray = image if image.ndim == 2 else
+    # cvtColor(...)`, so this used to hand each of them the colour image and pay for six
+    # redundant BGR2GRAY conversions per FOV. Passing `gray` is bit-identical output --
+    # verified on all 661 calibration FOVs -- and deletes that work. It also means a caller
+    # may hand this function a 2-D grayscale image directly, which is what the source data
+    # actually is: every FOV in all three datasets is already monochrome, so decoding colour
+    # at all is waste. See data/results/pipeline-runtime/README.md.
+    # -------------------------------------------------------------------------------------
     gray = to_grayscale(image)
-    mask, otsu_threshold = otsu_segment(image)
+    mask, otsu_threshold = otsu_segment(gray)
     coverage = cell_coverage(mask)
-    eta = otsu_separability(image)
+    eta = otsu_separability(gray)
     saturation_score = float(np.clip(coverage * (1.0 - eta), 0.0, 1.0))
 
-    corrected = correct_illumination(gray, blur_ksize=301)
+    corrected = correct_illumination(gray, blur_ksize=301, downsample=blur_downsample)
 
     def _tile_glcm_contrast(tile):
         quantized = (tile.astype(np.uint16) * TILE_GLCM_LEVELS // 256).astype(np.uint8)
@@ -200,9 +256,9 @@ def compute_features(image, lbp_step=DEFAULT_LBP_STEP):
         "otsu_threshold": float(otsu_threshold),
         "otsu_separability": eta,
         "saturation_score": saturation_score,
-        "lbp_entropy": lbp_entropy(image, step=lbp_step),
-        "glcm_contrast": glcm_contrast(image),
-        "edge_density_unmasked": edge_density(image),
+        "lbp_entropy": lbp_entropy(gray, step=lbp_step),
+        "glcm_contrast": glcm_contrast(gray),
+        "edge_density_unmasked": edge_density(gray),
         "tile_glcm_cv": coefficient_of_variation(tile_contrasts),
         "tile_glcm_patchiness": patchiness(tile_contrasts),
     }

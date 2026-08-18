@@ -38,6 +38,7 @@ That is a deliberately different tradeoff from downsampling the image first
 revalidation -- see `data/results/lbp-runtime/README.md`.
 """
 import multiprocessing
+import threading
 from concurrent.futures import ThreadPoolExecutor
 
 import cv2
@@ -186,14 +187,22 @@ def _lbp_codes(gray, n_points, radius, step=1, tile=TILE, workers=None, row_offs
 
 
 def _auto_workers():
-    """Thread count for one FOV, or 1 when we are already inside a worker process.
+    """Thread count for one FOV, or 1 when an outer pool already owns the parallelism.
 
-    `extract_features_v2.py` and `nigeria_081226.py` fan FOVs out over a `multiprocessing.Pool`;
-    spawning threads per FOV underneath that oversubscribes the machine and makes the whole
-    batch slower. Pool workers are daemonic, which is the signal to stay serial and let the
-    outer pool own the parallelism.
+    `extract_features_v2.py` and `score_fov_v2.py` fan FOVs out over a pool; spawning threads
+    per FOV underneath that oversubscribes the machine and makes the whole batch slower. Two
+    kinds of outer pool have to be detected, and missing either one is a real bug:
+
+    - **process** pool (`multiprocessing.Pool`): its workers are daemonic.
+    - **thread** pool (`multiprocessing.pool.ThreadPool`): its workers are ordinary threads in
+      the *main, non-daemonic* process, so the daemon check alone sees nothing and every FOV
+      would spawn its own 8 threads on top of the pool's. Cheap to miss, because at
+      `lbp_step=16` the whole output is a single tile and the serial branch runs anyway -- the
+      oversubscription only bites at small strides, which is exactly when it costs most.
     """
     if multiprocessing.current_process().daemon:
+        return 1
+    if threading.current_thread() is not threading.main_thread():
         return 1
     return min(MAX_THREADS, multiprocessing.cpu_count() or 1)
 
