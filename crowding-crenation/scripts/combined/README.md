@@ -363,6 +363,36 @@ exactly what misleads batch sizing; at `ds=4` the spread is **1.17x**. The stage
 larger than the 6.4x headline when threads are pinned — 2.404 s → 0.159 s is **15x** — because the
 headline was measured at default threading, where the full-res blur was already getting 16 threads.
 
+#### So how much time did the blur actually save?
+
+Per FOV, holding `lbp_step=16` fixed and changing only `blur_downsample` 1 → 4:
+
+| | `compute_features`, ds=1 | ds=4 | **saved per FOV** |
+|---|---|---|---|
+| OpenCV free to use 16 threads | 1.110 s | 0.491 s | **0.619 s** (2.3x) |
+| OpenCV pinned to 1 thread | 2.790 s | 0.573 s | **2.217 s** (4.9x) |
+
+Two numbers because the full-resolution blur is thread-hungry and the optimized one is not, so the
+saving depends on how much OpenCV threading the pass can actually get — and a batch pass that fans
+out over processes gets much less than 16 threads each.
+
+Over the 88,123 FOVs of the Tanzania cohort run, that is **15 core-hours saved at best case and
+54 core-hours at worst**. For scale, the crowding pass as it actually ran cost about **17
+core-hours** in total (88,123 x ~0.68 core-s of fetch + decode + features) — so without this one
+change the pass would have cost roughly **2x to 4x the compute it did**.
+
+**In wall clock on the run that actually happened:** the crowding pass took **46 minutes** at
+31.9 FOV/s (8 processes x 8 threads on 32 vCPUs, ~22-way effective parallelism). At
+`blur_downsample=1` the same pass would have taken roughly **1.5 to 3.5 hours** — the range is
+wide for the reason above: with 8 processes contending for 32 cores, none of them gets the 16
+threads that make the full-resolution blur look cheap in a single-FOV benchmark. So the honest
+statement is "it turned a multi-hour pass into a 46-minute one", not a single ratio.
+
+Worth separating from the LBP work when attributing credit: `lbp_entropy` went 4.80 s → 0.07 s
+(the larger absolute saving, ~4.7 s/FOV), and the blur went 0.65–0.75 s → 0.12 s on top of that.
+The blur is the smaller of the two in isolation, but it is the one that removed the *thread
+sensitivity* — which is what made the per-FOV cost predictable enough to size a batch run against.
+
 **Confirmed at scale:** the 271-slide Tanzania cohort run scored **88,123 FOVs at 31.9 FOV/s**
 aggregate (8 processes x 8 threads, 46 min) — see
 `data/results/tanzania-complete-081426/README.md`.
