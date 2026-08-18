@@ -131,6 +131,42 @@ For a given axis and its candidate feature set, `fit_weights_stable`:
 value that keeps correlated feature pairs' coefficients stably non-negative, so they
 contribute jointly rather than one getting dropped by the sign-instability loop above.
 
+### What survived, in v2.2
+
+Both axes start from the same 8-feature pool, so the deployed composites differ only by what
+the sign-instability loop dropped. Weights below are from
+`data/results/density-rouleaux-v2/density_overlap_v2.2_params.json` (661 FOVs), sorted by
+density weight:
+
+| feature | density | Rouleaux |
+|---|---|---|
+| `saturation_score` | 0.247 | 0.269 |
+| `coverage` | 0.236 | 0.263 |
+| `tile_glcm_patchiness` | 0.171 | 0.239 |
+| `edge_density_unmasked` | 0.098 | 0.043 |
+| `glcm_contrast` | 0.087 | 0.098 |
+| `tile_glcm_cv` | 0.082 | 0.088 |
+| `lbp_entropy` | 0.065 | *dropped* |
+| `otsu_separability` | 0.014 | *dropped* |
+
+Density keeps all 8. Rouleaux keeps 6: `otsu_separability` and `lbp_entropy` both went
+negative under ridge despite clearing the positive-partial-correlation screen, so the loop
+dropped them — the whole difference between the two axes is that pair.
+
+Two things to read off this table rather than the procedure above:
+
+- **`otsu_separability` survives on density but at 0.014** — it is effectively inert there.
+  The density composite is really the Rouleaux six plus a modest `lbp_entropy` (0.065).
+- **The top three are identical, in the same order, on both axes**, and account for ~65% of
+  density weight and ~77% of Rouleaux weight. That is the v2.1 trade-off showing up in
+  numbers: Spearman rho between the two fitted composite scores is **0.972**, against a true
+  manual density-vs-Rouleaux label correlation of **0.823**. The composites resemble each
+  other more than the labels they predict; the axis-separation check below is what keeps that
+  honest.
+
+`v2.2-optimized` reproduces both feature sets exactly, with weights differing by at most
+0.001 — as expected for a pure runtime change (see "The two runtime knobs" below).
+
 ### 3. Cross-validation
 
 `cross_validate()` runs 5-fold CV (`N_FOLDS = 5`), stratified by ordinal label
