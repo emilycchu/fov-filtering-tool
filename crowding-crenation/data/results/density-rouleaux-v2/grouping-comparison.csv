@@ -1,0 +1,27 @@
+axis,held_out_slide,n_fovs,grouped_exact,grouped_off_by_one,fold_rho
+density,KIT-62500652,1,1.0,1.0,
+density,KIT-62500666,1,0.0,1.0,
+density,KIT-62501048,1,0.0,1.0,
+density,KIT-62501056,1,0.0,1.0,
+density,KTR-72502946,324,0.6574,0.9938,0.8315
+density,KTR-72502948,324,0.4568,0.9352,0.4543
+density,LB-D12-2026-03-04-114809-250817119ELWA-Negative-2,1,0.0,1.0,
+density,LB-D3-2025-08-30-125645-25021889-D-thin-1,4,0.25,0.75,0.3162
+density,LB-D3-2025-08-30-130619-2412193030-D-thin-2,1,1.0,1.0,
+density,LB-D3-2025-08-30-132634-250816974-D-thin-4,1,1.0,1.0,
+density,LB-D3-2025-10-03-122127-250912792D-thin-3-4,2,0.0,0.5,
+density,ALL (FOV-stratified),661,0.6944,0.9803,0.7829
+density,ALL (leave-one-slide-out),661,0.5522,0.9622,0.534
+overlap,KIT-62500652,1,0.0,1.0,
+overlap,KIT-62500666,1,1.0,1.0,
+overlap,KIT-62501048,1,1.0,1.0,
+overlap,KIT-62501056,1,0.0,0.0,
+overlap,KTR-72502946,324,0.608,0.966,0.8465
+overlap,KTR-72502948,324,0.5833,0.8889,0.4685
+overlap,LB-D12-2026-03-04-114809-250817119ELWA-Negative-2,1,0.0,1.0,
+overlap,LB-D3-2025-08-30-125645-25021889-D-thin-1,4,0.25,0.75,-0.9487
+overlap,LB-D3-2025-08-30-130619-2412193030-D-thin-2,1,1.0,1.0,
+overlap,LB-D3-2025-08-30-132634-250816974-D-thin-4,1,1.0,1.0,
+overlap,LB-D3-2025-10-03-122127-250912792D-thin-3-4,2,0.0,0.0,
+overlap,ALL (FOV-stratified),661,0.6762,0.938,0.7373
+overlap,ALL (leave-one-slide-out),661,0.5915,0.9228,0.1221

@@ -1,0 +1,21 @@
+slide_bucket,slide_id,fov_id,blob,fov_overlap_label,fov_overlap_score
+no rouleaux,RUB-62501484,24,gs://tanzania_02032026/TZ2025-Box3/RUB-62501484/dpc-024-RUB-62501484.png,no rouleaux,0.1288363448
+no rouleaux,RUB-62501340,263,gs://tanzania_02032026/TZ2025-Box2/RUB-62501340/dpc-263-RUB-62501340.png,no rouleaux,0.09231886057
+no rouleaux,KIT-62500691,68,gs://tanzania_02032026/TZ2025-Box1/KIT-62500691/dpc-068-KIT-62500691.png,no rouleaux,0.3343542814
+no rouleaux,KIT-62501093,282,gs://tanzania_02032026/TZ2025-Box2/KIT-62501093/dpc-282-KIT-62501093.png,no rouleaux,0.06858824439
+no rouleaux,KIT-62500706,101,gs://tanzania_02032026/TZ2025-Box1/KIT-62500706/dpc-101-KIT-62500706.png,no rouleaux,0.09353174506
+slight rouleaux,KTR-72502717,291,gs://tanzania_02032026/TZ2025-Box5/KTR-72502717/dpc-291-KTR-72502717.png,no rouleaux,0.2268639085
+slight rouleaux,RUB-72501759,232,gs://tanzania_02032026/TZ2025-Box3/RUB-72501759/dpc-232-RUB-72501759.png,slight rouleaux,0.3861857685
+slight rouleaux,KTR-72502722,240,gs://tanzania_02032026/TZ2025-Box5/KTR-72502722/dpc-240-KTR-72502722.png,slight rouleaux,0.3766398912
+slight rouleaux,KIT-62501031,40,gs://tanzania_02032026/TZ2025-Box2/KIT-62501031/dpc-040-KIT-62501031.png,no rouleaux,0.3482005876
+slight rouleaux,NKR-72502298,147,gs://tanzania_02032026/TZ2025-Box4/NKR-72502298/dpc-147-NKR-72502298.png,no rouleaux,0.3727230345
+some rouleaux,RUB-72501760,305,gs://tanzania_02032026/TZ2025-Box3/RUB-72501760/dpc-305-RUB-72501760.png,rouleaux,0.5664353683
+some rouleaux,NKR-72502186,151,gs://tanzania_02032026/TZ2025-Box4/NKR-72502186/dpc-151-NKR-72502186.png,some rouleaux,0.4510452097
+some rouleaux,RUB-72501758,35,gs://tanzania_02032026/TZ2025-Box3/RUB-72501758/dpc-035-RUB-72501758.png,some rouleaux,0.4833637011
+some rouleaux,KIT-62500670,6,gs://tanzania_02032026/TZ2025-Box1/KIT-62500670/dpc-006-KIT-62500670.png,no rouleaux,0.3207700517
+some rouleaux,RUB-72501739,117,gs://tanzania_02032026/TZ2025-Box3/RUB-72501739/dpc-117-RUB-72501739.png,no rouleaux,0.3685252182
+rouleaux,RUB-72501743,132,gs://tanzania_02032026/TZ2025-Box3/RUB-72501743/dpc-132-RUB-72501743.png,some rouleaux,0.5121065286
+rouleaux,NKR-72502310,75,gs://tanzania_02032026/TZ2025-Box4/NKR-72502310/dpc-075-NKR-72502310.png,some rouleaux,0.5248608984
+rouleaux,RUB-72501735,35,gs://tanzania_02032026/TZ2025-Box3/RUB-72501735/dpc-035-RUB-72501735.png,rouleaux,0.6358691604
+rouleaux,RUB-72501730,30,gs://tanzania_02032026/TZ2025-Box3/RUB-72501730/dpc-030-RUB-72501730.png,rouleaux,0.5985213233
+rouleaux,NKR-72502337,298,gs://tanzania_02032026/TZ2025-Box4/NKR-72502337/dpc-298-NKR-72502337.png,rouleaux,0.5898968487

@@ -180,15 +180,22 @@ def parse_tanzania_tags(tags_str):
     return density_label, overlap_label or DEFAULT_OVERLAP_LABEL
 
 
-def read_csv_dicts(path):
-    with open(path, newline="") as f:
+def read_csv_dicts(path, encoding="utf-8"):
+    """Mirror of write_csv_dicts' explicit encoding -- see there for why."""
+    with open(path, newline="", encoding=encoding) as f:
         return list(csv.DictReader(f))
 
 
-def write_csv_dicts(path, fieldnames, rows):
+def write_csv_dicts(path, fieldnames, rows, encoding="utf-8"):
+    """Explicit utf-8 rather than the platform default.
+
+    Windows defaults text IO to cp1252, which raises UnicodeEncodeError on the hazard sign in
+    the Tanzania catalog's TRUTH column. Every value this repo wrote before that column existed
+    is ASCII, where utf-8 and cp1252 are byte-identical, so the default change rewrites nothing.
+    """
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "w", newline="") as f:
+    with open(path, "w", newline="", encoding=encoding) as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(rows)

@@ -396,3 +396,70 @@ Spearman rho between the two fitted composite scores: **0.972**, vs. the true ma
 |---|---|---|---|---|---|
 | 1 | 456 | 318 | 69.7% | 9.901e-18 | 0.313 |
 | 2 | 16 | 13 | 81.2% | 0.01064 | 0.000 |
+
+---
+
+# Cross-validation grouping: the published accuracy figures are inflated by same-slide leakage
+
+Reproduce with `python scripts/combined/evaluate_grouping.py` (writes `grouping-comparison.csv`).
+Nothing here refits production; it re-evaluates the existing fit under a different split.
+
+`cross_validate` calls `stratified_folds(ord_values, k, seed)` — it stratifies by **label** and
+splits **FOVs**, with no slide grouping. 648 of the 661 calibration FOVs come from two slides, so
+for almost every held-out FOV roughly 250 FOVs of the *same* slide — same patient, stain, scanner,
+session — sit in the training fold. Measured on the 271-slide cohort, within-slide score spread
+(median std 0.076) is *smaller* than between-slide spread (0.140), so those are near-duplicates.
+
+The published figures therefore answer "another FOV of a slide we have already seen". The tool is
+deployed **per slide**, where the question is "a slide we have never seen".
+
+To be clear about what is *not* wrong: `percentile_ranges` and `derive_thresholds` are already
+computed train-only inside each fold, so there is no range or threshold leakage. The issue is
+purely that FOVs are not grouped by slide.
+
+## Same fit, two splits (v2.2-optimized, 661 FOVs, 11 slides)
+
+| axis | split | exact | off-by-one | mean abs err | CV rho |
+|---|---|---|---|---|---|
+| density | FOV-stratified (published) | 0.6944 | 0.9803 | 0.327 | 0.783 |
+| density | **leave-one-slide-out** | **0.5522** | **0.9622** | 0.487 | 0.534 |
+| density | *gap* | *−0.1422* | *−0.0182* | *+0.160* | *−0.249* |
+| Rouleaux | FOV-stratified (published) | 0.6762 | 0.9380 | 0.398 | 0.737 |
+| Rouleaux | **leave-one-slide-out** | **0.5915** | **0.9228** | 0.501 | 0.122 |
+| Rouleaux | *gap* | *−0.0847* | *−0.0151* | *+0.103* | *−0.615* |
+
+The FOV-stratified column reproduces the recorded v2.2-optimized figures exactly (69.4/98.0 and
+67.6/93.8), which is what validates the harness.
+
+**Exact-match drops ~14 points on density and ~8.5 on Rouleaux.** Off-by-one is robust (−1.8 and
+−1.5 points), so the composite still gets the neighbourhood right on an unseen slide; it is the
+exact bucket call that was being flattered.
+
+## Read the per-slide folds, not the leave-one-slide-out CV rho
+
+Leave-one-slide-out means 11 folds, 9 of which hold 1–4 FOVs. The Rouleaux mean rho of **0.122** is
+an artifact of that: one 4-FOV Liberia fold scores −0.949 and drags the mean. The two 324-FOV folds
+carry 648 of 661 FOVs and are the meaningful estimate:
+
+| held-out slide | n | density exact / off-by-1 / rho | Rouleaux exact / off-by-1 / rho |
+|---|---|---|---|
+| KTR-72502946 | 324 | 0.657 / 0.994 / +0.831 | 0.608 / 0.966 / +0.847 |
+| KTR-72502948 | 324 | 0.457 / 0.935 / +0.454 | 0.583 / 0.889 / +0.469 |
+| **mean of the two** | 648 | **0.557 / 0.965 / +0.643** | **0.596 / 0.927 / +0.658** |
+
+**The two folds disagree sharply** — held-out rho +0.831 vs +0.454 on density depending only on
+which slide is held out. With a two-slide calibration set, the generalization estimate is itself
+unstable, and no single number should be quoted without that range.
+
+## What this changes
+
+- **Quote ~0.56 density / ~0.60 Rouleaux exact-match for a new slide**, not 0.694 / 0.676. Off-by-one
+  (~0.96 / ~0.93) is close to the published value and is the more trustworthy figure.
+- **Any future refit needs slide-grouped CV**, or improvements cannot be distinguished from better
+  memorisation of two slides. `grouped_folds()` in `calibrate_v2.py` does this; `cross_validate` now
+  takes an optional `fold_of` so either split can be evaluated without duplicating the fit logic.
+  The default is unchanged, so every recorded metric elsewhere in this report still stands as
+  written.
+- **The instability across the two folds is an argument for the annotation strategy**, not against
+  the model: with more labelled slides, grouped CV becomes both honest *and* stable. It is currently
+  honest but noisy.

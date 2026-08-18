@@ -1,0 +1,273 @@
+slide_id,box,truth,truth_warn,train_test_split,region,in_catalog
+NKR-72502209,TZ2025-Box4,positive,False,save_for_later,Tanzania / Kagera,True
+KIT-62501047,TZ2025-Box2,positive,False,save_for_later,Tanzania / Kagera,True
+KIT-62500672,TZ2025-Box1,positive,False,train,Tanzania / Kagera,True
+KIT-62501090,TZ2025-Box2,positive,False,test,Tanzania / Kagera,True
+KIT-62501038,TZ2025-Box2,positive,False,test,Tanzania / Kagera,True
+KTR-72502717,TZ2025-Box5,positive,False,save_for_later,Tanzania / Kagera,True
+RUB-62501347,TZ2025-Box2,positive,False,save_for_later,Tanzania / Kagera,True
+RUB-62501541,TZ2025-Box3,positive,False,train,Tanzania / Kagera,True
+KIT-62501093,TZ2025-Box2,positive,False,save_for_later,Tanzania / Kagera,True
+NKR-72502307,TZ2025-Box4,positive,False,save_for_later,Tanzania / Kagera,True
+KIT-62501042,TZ2025-Box2,positive,False,save_for_later,Tanzania / Kagera,True
+KIT-62500839,TZ2025-Box1,positive,False,save_for_later,Tanzania / Kagera,True
+NKR-72502353,TZ2025-Box4,positive,False,train,Tanzania / Kagera,True
+KIT-62500843,TZ2025-Box1,positive,False,train,Tanzania / Kagera,True
+KTR-72502931,TZ2025-Box5,positive,False,test,Tanzania / Kagera,True
+RUB-72501737,TZ2025-Box3,positive,False,train,Tanzania / Kagera,True
+RUB-72501750,TZ2025-Box3,positive,False,save_for_later,Tanzania / Kagera,True
+KIT-62501053,TZ2025-Box2,positive,False,save_for_later,Tanzania / Kagera,True
+RUB-62501408,TZ2025-Box2,positive,False,test,Tanzania / Kagera,True
+RUB-62501433,TZ2025-Box2,positive,False,save_for_later,Tanzania / Kagera,True
+RUB-62501335,TZ2025-Box2,positive,False,save_for_later,Tanzania / Kagera,True
+RUB-72501814,TZ2025-Box3,positive,False,save_for_later,Tanzania / Kagera,True
+NKR-72502227,TZ2025-Box5,positive,False,save_for_later,Tanzania / Kagera,True
+KIT-62501288,TZ2025-Box2,positive,False,save_for_later,Tanzania / Kagera,True
+KTR-72502907,TZ2025-Box5,positive,False,train,Tanzania / Kagera,True
+RUB-72501764,TZ2025-Box3,positive,False,save_for_later,Tanzania / Kagera,True
+KTR-72502705,TZ2025-Box5,positive,False,train,Tanzania / Kagera,True
+KIT-62500886,TZ2025-Box1,positive,False,save_for_later,Tanzania / Kagera,True
+KIT-62501048,TZ2025-Box2,positive,False,test,Tanzania / Kagera,True
+KIT-62501054,TZ2025-Box2,positive,False,test,Tanzania / Kagera,True
+NKR-72502297,TZ2025-Box4,positive,False,save_for_later,Tanzania / Kagera,True
+RUB-62501472,TZ2025-Box3,positive,False,save_for_later,Tanzania / Kagera,True
+RUB-62501529,TZ2025-Box3,positive,False,test,Tanzania / Kagera,True
+RUB-62501383,TZ2025-Box2,positive,False,train,Tanzania / Kagera,True
+KIT-62500687,TZ2025-Box1,positive,False,test,Tanzania / Kagera,True
+KIT-62500704,TZ2025-Box1,positive,False,test,Tanzania / Kagera,True
+KIT-62501043,TZ2025-Box2,positive,False,train,Tanzania / Kagera,True
+NKR-72502327,TZ2025-Box4,positive,False,save_for_later,Tanzania / Kagera,True
+NKR-72502344,TZ2025-Box4,positive,False,test,Tanzania / Kagera,True
+NKR-72502360,TZ2025-Box4,positive,False,test,Tanzania / Kagera,True
+RUB-62501429,TZ2025-Box2,positive,False,train,Tanzania / Kagera,True
+RUB-62501464,TZ2025-Box2,positive,False,save_for_later,Tanzania / Kagera,True
+RUB-62501575,TZ2025-Box3,positive,False,save_for_later,Tanzania / Kagera,True
+RUB-72501771,TZ2025-Box3,positive,False,test,Tanzania / Kagera,True
+RUB-72501825,TZ2025-Box3,positive,False,save_for_later,Tanzania / Kagera,True
+KIT-62501041,TZ2025-Box2,positive,False,train,Tanzania / Kagera,True
+NKR-72502228,TZ2025-Box5,positive,False,save_for_later,Tanzania / Kagera,True
+RUB-62501349,TZ2025-Box2,positive,False,train,Tanzania / Kagera,True
+KIT-62500700,TZ2025-Box1,positive,False,train,Tanzania / Kagera,True
+NKR-72502299,TZ2025-Box4,positive,False,save_for_later,Tanzania / Kagera,True
+RUB-62501342,TZ2025-Box2,positive,False,train,Tanzania / Kagera,True
+NKR-72502233,TZ2025-Box4,positive,False,save_for_later,Tanzania / Kagera,True
+NKR-72502166,TZ2025-Box4,positive,False,test,Tanzania / Kagera,True
+KIT-62501095,TZ2025-Box2,positive,False,save_for_later,Tanzania / Kagera,True
+RUB-72501752,TZ2025-Box3,positive,False,test,Tanzania / Kagera,True
+RUB-62501471,TZ2025-Box3,positive,False,save_for_later,Tanzania / Kagera,True
+KIT-62501113,TZ2025-Box2,positive,False,save_for_later,Tanzania / Kagera,True
+KIT-62501077,TZ2025-Box2,positive,False,save_for_later,Tanzania / Kagera,True
+KIT-62501052,TZ2025-Box2,positive,False,test,Tanzania / Kagera,True
+KIT-62501049,TZ2025-Box2,positive,False,test,Tanzania / Kagera,True
+RUB-62501390,TZ2025-Box2,positive,False,train,Tanzania / Kagera,True
+RUB-62501522,TZ2025-Box3,positive,False,test,Tanzania / Kagera,True
+RUB-62501519,TZ2025-Box3,positive,False,save_for_later,Tanzania / Kagera,True
+KIT-62501067,TZ2025-Box2,positive,False,train,Tanzania / Kagera,True
+KTR-72502949,TZ2025-Box5,positive,False,save_for_later,Tanzania / Kagera,True
+RUB-62501517,TZ2025-Box3,positive,False,test,Tanzania / Kagera,True
+KTR-72502723,TZ2025-Box5,positive,False,train,Tanzania / Kagera,True
+KTR-72502764,TZ2025-Box5,positive,False,save_for_later,Tanzania / Kagera,True
+RUB-62501365,TZ2025-Box2,positive,False,save_for_later,Tanzania / Kagera,True
+RUB-62501396,TZ2025-Box2,positive,False,save_for_later,Tanzania / Kagera,True
+KIT-62501058,TZ2025-Box2,positive,False,train,Tanzania / Kagera,True
+KTR-72502701,TZ2025-Box5,positive,False,train,Tanzania / Kagera,True
+NKR-72502513,TZ2025-Box5,positive,False,save_for_later,Tanzania / Kagera,True
+KIT-62501083,TZ2025-Box2,positive,False,save_for_later,Tanzania / Kagera,True
+KIT-62500906,TZ2025-Box1,positive,False,save_for_later,Tanzania / Kagera,True
+KIT-62501059,TZ2025-Box2,positive,False,test,Tanzania / Kagera,True
+NKR-72502225,TZ2025-Box5,positive,False,save_for_later,Tanzania / Kagera,True
+KIT-62500689,TZ2025-Box1,positive,False,train,Tanzania / Kagera,True
+KTR-72502943,TZ2025-Box5,positive,False,train,Tanzania / Kagera,True
+KIT-62500690,TZ2025-Box1,positive,False,test,Tanzania / Kagera,True
+RUB-72501821,TZ2025-Box3,positive,False,save_for_later,Tanzania / Kagera,True
+RUB-72501787,TZ2025-Box3,positive,False,test,Tanzania / Kagera,True
+RUB-62501334,TZ2025-Box2,positive,False,train,Tanzania / Kagera,True
+KIT-62500913,TZ2025-Box1,positive,False,save_for_later,Tanzania / Kagera,True
+RUB-72501824,TZ2025-Box3,positive,False,save_for_later,Tanzania / Kagera,True
+KIT-62500696,TZ2025-Box1,positive,False,save_for_later,Tanzania / Kagera,True
+KIT-62500917,TZ2025-Box1,positive,False,save_for_later,Tanzania / Kagera,True
+KIT-62500679,TZ2025-Box1,positive,False,test,Tanzania / Kagera,True
+KIT-62500919,TZ2025-Box1,positive,False,train,Tanzania / Kagera,True
+KIT-62500923,TZ2025-Box1,positive,False,save_for_later,Tanzania / Kagera,True
+RUB-62501385,TZ2025-Box2,positive,False,,Tanzania / Kagera,True
+RUB-62501337,TZ2025-Box2,positive,False,,Tanzania / Kagera,True
+RUB-62501466,TZ2025-Box3,positive,False,,Tanzania / Kagera,True
+RUB-62501535,TZ2025-Box3,positive,False,,Tanzania / Kagera,True
+RUB-62501539,TZ2025-Box3,positive,False,,Tanzania / Kagera,True
+KTR-72502734,TZ2025-Box5,positive,False,,Tanzania / Kagera,True
+NKR-72502310,TZ2025-Box4,positive,False,,Tanzania / Kagera,True
+RUB-62501499,TZ2025-Box3,positive,False,,Tanzania / Kagera,True
+RUB-62501479,TZ2025-Box3,positive,False,,Tanzania / Kagera,True
+KTR-72502740,TZ2025-Box5,positive,False,,Tanzania / Kagera,True
+KTR-72502955,TZ2025-Box5,positive,False,,Tanzania / Kagera,True
+RUB-72501730,TZ2025-Box3,positive,False,,Tanzania / Kagera,True
+RUB-62501343,TZ2025-Box2,positive,False,,Tanzania / Kagera,True
+RUB-62501389,TZ2025-Box2,positive,False,,Tanzania / Kagera,True
+RUB-62501418,TZ2025-Box2,positive,False,,Tanzania / Kagera,True
+NKR-72502335,TZ2025-Box4,positive,False,,Tanzania / Kagera,True
+NKR-72502363,TZ2025-Box4,positive,False,,Tanzania / Kagera,True
+KIT-62501112,TZ2025-Box2,positive,False,,Tanzania / Kagera,True
+KTR-72502891,TZ2025-Box5,positive,False,,Tanzania / Kagera,True
+NKR-72502322,TZ2025-Box4,positive,False,,Tanzania / Kagera,True
+RUB-62501346,TZ2025-Box2,positive,False,,Tanzania / Kagera,True
+RUB-62501495,TZ2025-Box3,positive,False,,Tanzania / Kagera,True
+KTR-72502942,TZ2025-Box5,positive,False,,Tanzania / Kagera,True
+NKR-72502142,TZ2025-Box4,positive,False,,Tanzania / Kagera,True
+NKR-72502319,TZ2025-Box4,positive,False,,Tanzania / Kagera,True
+RUB-72501758,TZ2025-Box3,positive,False,,Tanzania / Kagera,True
+NKR-72502171,TZ2025-Box4,positive,False,,Tanzania / Kagera,True
+KTR-72502963,TZ2025-Box5,positive,False,,Tanzania / Kagera,True
+RUB-62501403,TZ2025-Box2,positive,False,,Tanzania / Kagera,True
+RUB-62501480,TZ2025-Box3,positive,False,,Tanzania / Kagera,True
+KIT-62500907,TZ2025-Box1,positive,False,,Tanzania / Kagera,True
+KIT-62501035,TZ2025-Box2,positive,False,,Tanzania / Kagera,True
+KIT-62501104,TZ2025-Box2,positive,False,,Tanzania / Kagera,True
+KIT-62501107,TZ2025-Box2,positive,False,,Tanzania / Kagera,True
+KTR-72502749,TZ2025-Box5,positive,False,,Tanzania / Kagera,True
+KTR-72502948,TZ2025-Box5,positive,False,,Tanzania / Kagera,True
+KTR-72502954,TZ2025-Box5,positive,False,,Tanzania / Kagera,True
+NKR-72502127,TZ2025-Box4,positive,False,,Tanzania / Kagera,True
+NKR-72502175,TZ2025-Box4,positive,False,,Tanzania / Kagera,True
+NKR-72502177,TZ2025-Box4,positive,False,,Tanzania / Kagera,True
+NKR-72502181,TZ2025-Box4,positive,False,,Tanzania / Kagera,True
+NKR-72502221,TZ2025-Box4,positive,False,,Tanzania / Kagera,True
+NKR-72502224,TZ2025-Box4,positive,False,,Tanzania / Kagera,True
+NKR-72502235,TZ2025-Box4,positive,False,,Tanzania / Kagera,True
+NKR-72502533,TZ2025-Box5,positive,False,,Tanzania / Kagera,True
+NKR-72502552,TZ2025-Box5,positive,False,,Tanzania / Kagera,True
+RUB-62501340,TZ2025-Box2,positive,False,,Tanzania / Kagera,True
+RUB-62501533,TZ2025-Box3,positive,False,,Tanzania / Kagera,True
+RUB-72501735,TZ2025-Box3,positive,False,,Tanzania / Kagera,True
+RUB-72501760,TZ2025-Box3,positive,False,,Tanzania / Kagera,True
+RUB-72501823,TZ2025-Box3,positive,False,,Tanzania / Kagera,True
+NKR-72502186,TZ2025-Box4,positive,False,,Tanzania / Kagera,True
+RUB-72501751,TZ2025-Box3,positive,False,,Tanzania / Kagera,True
+RUB-72501759,TZ2025-Box3,positive,False,,Tanzania / Kagera,True
+KIT-62500666,TZ2025-Box1,positive,False,,Tanzania / Kagera,True
+NKR-72502230,TZ2025-Box4,positive,False,,Tanzania / Kagera,True
+RUB-62501430,TZ2025-Box2,positive,False,,Tanzania / Kagera,True
+RUB-62501515,TZ2025-Box3,positive,False,,Tanzania / Kagera,True
+KIT-62501111,TZ2025-Box2,positive,False,,Tanzania / Kagera,True
+KIT-62501069,TZ2025-Box2,positive,False,,Tanzania / Kagera,True
+KIT-62501056,TZ2025-Box2,positive,False,,Tanzania / Kagera,True
+KIT-62501089,TZ2025-Box2,positive,False,,Tanzania / Kagera,True
+KIT-62500732,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62500731,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62500735,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+RUB-62501292,TZ2025-Box3,positive ⚠,True,,Tanzania / Kagera,True
+RUB-72501749,TZ2025-Box3,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62500744,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62500739,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62500742,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+RUB-62501419,TZ2025-Box2,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62500833,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62500901,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62500705,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62500706,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+RUB-62501327,TZ2025-Box2,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62500818,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+RUB-62501492,TZ2025-Box3,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62500741,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62500750,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62500745,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+RUB-62501338,TZ2025-Box2,positive ⚠,True,,Tanzania / Kagera,True
+RUB-62501399,TZ2025-Box2,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62500932,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62501040,TZ2025-Box2,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62500883,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62500668,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+RUB-72501818,TZ2025-Box3,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62500746,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62500763,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+RUB-62501426,TZ2025-Box2,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62500893,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62500896,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62500926,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62501031,TZ2025-Box2,positive ⚠,True,,Tanzania / Kagera,True
+RUB-62501483,TZ2025-Box3,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62500910,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+NKR-72502313,TZ2025-Box4,positive ⚠,True,,Tanzania / Kagera,True
+NKR-72502321,TZ2025-Box4,positive ⚠,True,,Tanzania / Kagera,True
+RUB-62501527,TZ2025-Box3,positive ⚠,True,,Tanzania / Kagera,True
+RUB-72501776,TZ2025-Box3,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62500703,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+NKR-72502137,TZ2025-Box4,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62500680,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+RUB-62501478,TZ2025-Box3,positive ⚠,True,,Tanzania / Kagera,True
+RUB-72501739,TZ2025-Box3,positive ⚠,True,,Tanzania / Kagera,True
+RUB-62501484,TZ2025-Box3,positive ⚠,True,,Tanzania / Kagera,True
+RUB-62501486,TZ2025-Box3,positive ⚠,True,,Tanzania / Kagera,True
+RUB-72501801,TZ2025-Box3,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62500724,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62500686,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62500916,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62500927,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62501062,TZ2025-Box2,positive ⚠,True,,Tanzania / Kagera,True
+KTR-72502960,TZ2025-Box5,positive ⚠,True,,Tanzania / Kagera,True
+NKR-72502314,TZ2025-Box4,positive ⚠,True,,Tanzania / Kagera,True
+NKR-72502330,TZ2025-Box4,positive ⚠,True,,Tanzania / Kagera,True
+RUB-62501379,TZ2025-Box2,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62500670,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62500684,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62500693,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62500722,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62500727,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62500733,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62500762,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62500834,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62500840,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62500895,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62500900,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62500905,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62500912,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62501034,TZ2025-Box2,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62501050,TZ2025-Box2,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62501057,TZ2025-Box2,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62501070,TZ2025-Box2,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62501072,TZ2025-Box2,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62501075,TZ2025-Box2,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62501087,TZ2025-Box2,positive ⚠,True,,Tanzania / Kagera,True
+KTR-72502708,TZ2025-Box5,positive ⚠,True,,Tanzania / Kagera,True
+KTR-72502720,TZ2025-Box5,positive ⚠,True,,Tanzania / Kagera,True
+KTR-72502725,TZ2025-Box5,positive ⚠,True,,Tanzania / Kagera,True
+KTR-72502895,TZ2025-Box5,positive ⚠,True,,Tanzania / Kagera,True
+KTR-72502934,TZ2025-Box5,positive ⚠,True,,Tanzania / Kagera,True
+KTR-72502935,TZ2025-Box5,positive ⚠,True,,Tanzania / Kagera,True
+KTR-72502937,TZ2025-Box5,positive ⚠,True,,Tanzania / Kagera,True
+KTR-72502944,TZ2025-Box5,positive ⚠,True,,Tanzania / Kagera,True
+KTR-72502947,TZ2025-Box5,positive ⚠,True,,Tanzania / Kagera,True
+NKR-72502165,TZ2025-Box4,positive ⚠,True,,Tanzania / Kagera,True
+NKR-72502187,TZ2025-Box4,positive ⚠,True,,Tanzania / Kagera,True
+NKR-72502244,TZ2025-Box4,positive ⚠,True,,Tanzania / Kagera,True
+NKR-72502337,TZ2025-Box4,positive ⚠,True,,Tanzania / Kagera,True
+NKR-72502338,TZ2025-Box4,positive ⚠,True,,Tanzania / Kagera,True
+RUB-62501332,TZ2025-Box2,positive ⚠,True,,Tanzania / Kagera,True
+RUB-62501381,TZ2025-Box2,positive ⚠,True,,Tanzania / Kagera,True
+RUB-62501392,TZ2025-Box2,positive ⚠,True,,Tanzania / Kagera,True
+RUB-62501397,TZ2025-Box2,positive ⚠,True,,Tanzania / Kagera,True
+RUB-62501467,TZ2025-Box3,positive ⚠,True,,Tanzania / Kagera,True
+RUB-62501474,TZ2025-Box3,positive ⚠,True,,Tanzania / Kagera,True
+RUB-62501521,TZ2025-Box3,positive ⚠,True,,Tanzania / Kagera,True
+RUB-62501525,TZ2025-Box3,positive ⚠,True,,Tanzania / Kagera,True
+RUB-62501526,TZ2025-Box3,positive ⚠,True,,Tanzania / Kagera,True
+RUB-72501743,TZ2025-Box3,positive ⚠,True,,Tanzania / Kagera,True
+RUB-72501819,TZ2025-Box3,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62500691,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62500920,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62501081,TZ2025-Box2,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62501100,TZ2025-Box2,positive ⚠,True,,Tanzania / Kagera,True
+KTR-72502722,TZ2025-Box5,positive ⚠,True,,Tanzania / Kagera,True
+NKR-72502298,TZ2025-Box4,positive ⚠,True,,Tanzania / Kagera,True
+NKR-72502333,TZ2025-Box4,positive ⚠,True,,Tanzania / Kagera,True
+NKR-72502347,TZ2025-Box4,positive ⚠,True,,Tanzania / Kagera,True
+NKR-72502348,TZ2025-Box4,positive ⚠,True,,Tanzania / Kagera,True
+RUB-62501325,TZ2025-Box2,positive ⚠,True,,Tanzania / Kagera,True
+RUB-62501416,TZ2025-Box2,positive ⚠,True,,Tanzania / Kagera,True
+RUB-62501424,TZ2025-Box2,positive ⚠,True,,Tanzania / Kagera,True
+RUB-62501512,TZ2025-Box3,positive ⚠,True,,Tanzania / Kagera,True
+RUB-72501807,TZ2025-Box3,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62500708,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+KIT-62500740,TZ2025-Box1,positive ⚠,True,,Tanzania / Kagera,True
+RUB-72501822,TZ2025-Box3,positive ⚠,True,,Tanzania / Kagera,True
+RUB-62501518,TZ2025-Box3,positive ⚠,True,,Tanzania / Kagera,True
+KTR-72502946,TZ2025-Box5,,False,,,False

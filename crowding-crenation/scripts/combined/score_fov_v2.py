@@ -32,6 +32,7 @@ from _v2_common import (
     apply_label_overrides,
     blur_downsample_from_params,
     compute_features,
+    empty_field_fired,
     lbp_step_from_params,
     list_image_paths,
     load_image,
@@ -52,29 +53,62 @@ def _score_axis(features, axis_params):
     return score, label
 
 
-def score_image_v2(path, params):
+def score_features_v2(features, params):
+    """Both composites, both labels, the overrides, and whether the empty-field gate fired.
+
+    Split out of `score_image_v2` so a caller that already has a feature vector can score it
+    without re-reading the image, and so batch callers can report the gate. Two things needed
+    that:
+
+    - `empty_field_gated` is not derivable from the returned labels. The gate forces the bottom
+      bucket on both axes, which is indistinguishable from a genuinely sparse FOV scoring there
+      on its own, so a slide-level count of gated FOVs has to come from the gate itself.
+    - Retry scope. `score_image_v2` bundles the download with ~0.5 s of feature computation, so
+      wrapping the whole thing in a network retry re-burns compute that already succeeded.
+      Callers that stream at scale wrap `load_image` alone and then call this.
+    """
+    density_score, density_label = _score_axis(features, params["density"])
+    overlap_score, overlap_label = _score_axis(features, params["overlap"])
+
+    raw_density_label, raw_overlap_label = density_label, overlap_label
+    density_label, overlap_label = apply_label_overrides(density_label, overlap_label, features, params)
+
+    return {
+        "density_score": density_score,
+        "density_label": density_label,
+        "overlap_score": overlap_score,
+        "overlap_label": overlap_label,
+        "saturation_score": features.get("saturation_score"),
+        "empty_field_gated": empty_field_fired(features, params.get("empty_field_override")),
+        "raw_density_label": raw_density_label,
+        "raw_overlap_label": raw_overlap_label,
+    }
+
+
+def features_for_scoring(path, params):
+    """Read one image and compute its feature vector at the stride the params were fit with."""
     # grayscale=True is bit-identical and skips decoding three identical channels --
     # every FOV in this repo is already monochrome. See src/pipeline.py::load_image.
     image = load_image(path, grayscale=True)
     # Both runtime knobs come from the params file, never from a local default -- a fit made
     # on subsampled LBP entropy or a downsampled illumination background has to be scored the
     # same way, and only the fit knows which it was.
-    features = compute_features(image, lbp_step=lbp_step_from_params(params),
-                                blur_downsample=blur_downsample_from_params(params))
+    return compute_features(image, lbp_step=lbp_step_from_params(params),
+                            blur_downsample=blur_downsample_from_params(params))
 
-    density_score, density_label = _score_axis(features, params["density"])
-    overlap_score, overlap_label = _score_axis(features, params["overlap"])
 
-    density_label, overlap_label = apply_label_overrides(density_label, overlap_label, features, params)
-
+def score_image_v2(path, params):
+    features = features_for_scoring(path, params)
+    scored = score_features_v2(features, params)
     return {
         "filename": Path(str(path)).name,
         "path": str(path),
-        "density_score": density_score,
-        "density_label": density_label,
-        "overlap_score": overlap_score,
-        "overlap_label": overlap_label,
-        "saturation_score": features.get("saturation_score"),
+        "density_score": scored["density_score"],
+        "density_label": scored["density_label"],
+        "overlap_score": scored["overlap_score"],
+        "overlap_label": scored["overlap_label"],
+        "saturation_score": scored["saturation_score"],
+        "empty_field_gated": scored["empty_field_gated"],
     }
 
 
@@ -115,10 +149,10 @@ def write_csv(rows, out_csv):
     import csv
 
     fieldnames = ["filename", "path", "density_score", "density_label", "overlap_score",
-                  "overlap_label", "saturation_score", "error"]
+                  "overlap_label", "saturation_score", "empty_field_gated", "error"]
     out_csv = Path(out_csv)
     out_csv.parent.mkdir(parents=True, exist_ok=True)
-    with open(out_csv, "w", newline="") as f:
+    with open(out_csv, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         for r in rows:
