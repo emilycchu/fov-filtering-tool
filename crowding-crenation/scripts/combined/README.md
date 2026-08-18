@@ -247,7 +247,8 @@ extract_features_v2.py    compute_features() over the merged set -> features.csv
 calibrate_v2.py            v2: axis-exclusive partial-correlation selection + ridge + PAVA
 calibrate_v2.1.py          v2.1: full-feature-pool refit, same 337 FOVs
 calibrate_v2.2.py          v2.2: full-feature-pool refit, pooled to 661 FOVs
-calibrate_v2.2-optimized.py  v2.2 refit on stride-16 LBP entropy (5.7x faster per FOV)
+calibrate_v2.2-optimized.py  v2.2 refit on stride-16 LBP entropy + 4x-downsampled
+                           illumination background (6.3x faster per FOV, ~12x vs skimage LBP)
 check_empty_field_gate.py  assert the empty-field gate is a no-op on the calibration set
 score_fov_v2.py            inference: score a new image/directory with a params JSON
 plot_results_v2.py         density/Rouleaux/density-vs-Rouleaux scatter plots
@@ -318,13 +319,64 @@ v2/v2.1/v2.2 params, which have neither key, score at full resolution exactly as
 `extract_features_v2.py`'s `--lbp-step` / `--blur-downsample` default to 1 for the same reason,
 so re-running it still reproduces the older feature CSVs.
 
+#### The illumination blur, in detail
+
+`correct_illumination(gray, blur_ksize=301, downsample=N)` estimates the illumination background
+with a 301-px Gaussian and subtracts it, and only `tile_glcm_cv` / `tile_glcm_patchiness` consume
+the result. A 301-px Gaussian is a low-pass filter by construction, so estimating it on a shrunken
+copy loses almost nothing — the same reasoning that justifies striding the LBP centre grid.
+
+**It became the bottleneck because the LBP work removed the previous one.** Once `lbp_entropy`
+dropped from 4.80 s to 0.07 s, the 301-px blur was 0.65–0.75 s of a ~1.1 s feature vector, i.e.
+**55–71% of everything that was left.**
+
+The 661-FOV sweep (`sweep_blur_downsample.py`), scored with the v2.2-optimized params unchanged so
+any label change is attributable to the blur alone:
+
+| `blur_downsample` | `correct_illumination` | stage speedup | max drift, patchiness | density flips | Rouleaux flips | gate check |
+|---|---|---|---|---|---|---|
+| 1 | 0.773 s | 1.0x | 0 | 0 | 0 | pass |
+| **2** | 0.198 s | 3.9x | **0.0616** | 0 | **4** | **FAIL** |
+| **4 (adopted)** | **0.121 s** | **6.4x** | 0.0044 | **0** | **0** | **pass** |
+| 8 | 0.123 s | 6.3x | 0.0070 | 0 | 0 | pass |
+| 16 | 0.131 s | 5.9x | 0.0176 | 0 | 0 | pass |
+
+**Why 6.4x and not 38x.** The blur *itself* goes 0.531 s → 0.014 s. But `correct_illumination` also
+does `gray.astype(float32) - background + mean`, then clips and casts back — about **0.11 s of fixed
+cost over 7.84M pixels regardless of downsample**. That tail is the floor for this stage, and it is
+why 8 and 16 are no faster while drifting more. Reducing it would mean changing the arithmetic
+(int16, or `cv2.subtract` with saturation), which changes output.
+
+**A second benefit, easy to miss: it makes per-FOV cost nearly thread-independent.** The full-resolution
+blur is OpenCV-multithreaded, so its cost swung 2.9x with `cv2.getNumThreads()` — and a batch pass
+that fans out over processes has to pin OpenCV to one thread or oversubscribe. Measured on one
+2800x2800 FOV at `lbp_step=16`:
+
+| `cv2` threads | blur, ds=1 | blur, ds=4 | `compute_features`, ds=1 | `compute_features`, ds=4 |
+|---|---|---|---|---|
+| 1 | 2.404 s | 0.159 s | 2.790 s | **0.573 s** |
+| 4 | 1.615 s | 0.119 s | 2.184 s | 0.536 s |
+| 16 | 0.820 s | 0.107 s | 1.110 s | **0.491 s** |
+
+So at `ds=1` the answer to "how long does a FOV take" depended **2.5x** on pool shape, which is
+exactly what misleads batch sizing; at `ds=4` the spread is **1.17x**. The stage speedup is also
+larger than the 6.4x headline when threads are pinned — 2.404 s → 0.159 s is **15x** — because the
+headline was measured at default threading, where the full-res blur was already getting 16 threads.
+
+**Confirmed at scale:** the 271-slide Tanzania cohort run scored **88,123 FOVs at 31.9 FOV/s**
+aggregate (8 processes x 8 threads, 46 min) — see
+`data/results/tanzania-complete-081426/README.md`.
+
 **`blur_downsample=2` is disqualified, and not for the reason you would guess.** It is the only
 factor in the sweep that changes any label — 4 Rouleaux flips, all of them correct predictions
-lost — and it drifts 5-14x more than 4 despite being the gentler downsample. It is not the sigma
-mismatch from integer-dividing the kernel size; a sigma-matched variant measured identical. See
-`data/results/pipeline-runtime/README.md`. Going past 4 is pointless for a different reason:
-`correct_illumination`'s float32 subtract/clip is ~0.11 s of fixed cost, so 8 and 16 are no
-faster while drifting more.
+lost (`check_empty_field_gate.py` reports Rouleaux exact-match 0.6838 → 0.6808) — and it drifts
+5–14x more than 4 despite being the gentler downsample. It is not the sigma mismatch from
+integer-dividing the kernel size: OpenCV infers sigma from ksize, giving each factor a slightly
+different effective sigma (45.5 → 46.0 → 46.4 → 47.2 → 51.2), and a sigma-matched variant passing
+`sigmaX` explicitly measured identical (0.0361 vs 0.0389 mean error at `ds=4`). So it is the
+`INTER_AREA` down / `INTER_LINEAR` up round-trip, and **the mechanism is unexplained** — recorded
+as such rather than guessed at, since nothing rests on it: `ds=4` beats `ds=2` on both speed and
+accuracy. Full working in `data/results/pipeline-runtime/README.md`.
 
 The single in-sample difference is `dpc-176-KTR-72502946.png` (manual: dense), and it is a
 threshold artifact rather than a feature one: its composite score moved by −0.00006 while the
