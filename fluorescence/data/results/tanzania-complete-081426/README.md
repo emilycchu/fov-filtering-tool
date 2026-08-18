@@ -11,9 +11,11 @@ Two methods, over the same 271 slides, so their per-slide flag rates are directl
 | **1** | `run_overexposure_pass.py` -- the pixel-level halo detector (`src/overexposure.py`) | 87,801 fluorescence FOVs, streamed | the expensive one |
 | **2** | `run_crop_outlier_pass.py` -- per-FOV spot count vs. the slide's own median/MAD | precomputed `fov_summary.csv`, no images | 271 slides in **48 s** |
 
-## Status
+## Status: both complete
 
-Method 2 is **done** for all 271 slides. Method 1 needs the VM (474 GB of streaming).
+Run on the `n2-standard-32` Spot VM, 2026-08-17. Method 1: 271 slides, **87,801 FOVs, 0 errors**,
+74 min at 19.8 FOV/s. Method 2: 271 slides in **3.3 s** on the VM (48 s locally — it is bound by
+271 small CSV fetches, so it tracks network latency rather than compute).
 
 ## Method 2 results (complete)
 
@@ -21,7 +23,7 @@ Method 2 is **done** for all 271 slides. Method 1 needs the VM (474 GB of stream
 271 slides, metric=n_spots_detected, 16 threads
 sources: {'tz_detection': 187, 'annotation_bucket': 84}
 slide flags: {'mean_median_divergence': 32}
-elapsed: 48.2s
+elapsed: 3.3s   (VM, in-region)
 ```
 
 - **Source split is exactly 187 / 84**, matching what was predicted from the bucket layout: 187
@@ -43,6 +45,26 @@ elapsed: 48.2s
   | z ≥ 2 | 6,165 |
   | **z ≥ 6** (adopted) | **641** |
   | z ≥ 10 | 289 |
+
+## Method 1 was the slow half, and why
+
+The 271-slide run took **74 minutes** for the overexposure pass against **46 minutes** for the
+crowding pass over a comparable FOV count — 19.8 FOV/s vs 31.9 FOV/s — despite doing far less
+compute per FOV (a 400px downsample and a blur, versus the whole 9-feature vector).
+
+The cause was not missing threading: a `ThreadPoolExecutor` over each slide's FOVs was here from the
+start. It was that the pass ran as **one process**, and threads saturate on the GIL well before the
+machine does. numpy and cv2 release it for the blob download and the heavy array work, but
+per-operation dispatch holds it — the same ceiling the crowding pass hit at 8 threads / 14.35 FOV/s
+before its process fan-out took it to 29.75.
+
+`--procs` now fans out over processes, each with its own GIL and thread pool, on a disjoint shard of
+slides — sharded *after* the checkpoint skip so a resumed run spreads only the remaining work. On
+the VM config used for the run (`--procs 8 --threads 8`), this pass should land near the crowding
+pass's throughput rather than at 62% of it, cutting ~74 min to roughly 30.
+
+Not re-run: the existing results are complete and correct, and re-streaming 474 GB to produce
+identical CSVs faster would be spending an hour to save one. The flag applies to the next sweep.
 
 ## Method 1 design notes
 
@@ -92,7 +114,7 @@ KTR-72502946 is the regression slide and is **not** one of the 271; it is scored
 
 ```bash
 python scripts/tanzania-complete-081426/run_crop_outlier_pass.py --assert-sources
-python scripts/tanzania-complete-081426/run_overexposure_pass.py --threads 8
+python scripts/tanzania-complete-081426/run_overexposure_pass.py --procs 8 --threads 8
 ```
 
 Both are resumable per slide: a slide whose CSV exists with the expected row count is skipped, and

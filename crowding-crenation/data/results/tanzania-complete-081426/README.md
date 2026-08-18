@@ -239,22 +239,37 @@ slide in training — and this run measured that within-slide spread (median std
 than between-slide spread (0.140), i.e. those are near-duplicates. The published figures answer
 "another FOV of a slide we have already seen"; the tool is deployed **per slide**.
 
-| axis | FOV-stratified (published) | leave-one-slide-out | gap |
-|---|---|---|---|
-| density exact | 0.6944 | **0.5522** | −0.1422 |
-| density off-by-one | 0.9803 | **0.9622** | −0.0182 |
-| Rouleaux exact | 0.6762 | **0.5915** | −0.0847 |
-| Rouleaux off-by-one | 0.9380 | **0.9228** | −0.0151 |
+| axis | metric | FOV-stratified (published) | leave-one-slide-out | gap |
+|---|---|---|---|---|
+| density | exact | 0.6944 | **0.5522** | −0.1422 |
+| density | off-by-one | 0.9803 | **0.9622** | −0.0182 |
+| density | mean abs err | 0.327 | 0.487 | +0.160 |
+| density | CV mean rho | 0.783 | **0.534** | −0.249 |
+| Rouleaux | exact | 0.6762 | **0.5915** | −0.0847 |
+| Rouleaux | off-by-one | 0.9380 | **0.9228** | −0.0151 |
+| Rouleaux | mean abs err | 0.398 | 0.501 | +0.103 |
+| Rouleaux | CV mean rho | 0.737 | **0.122** | −0.615 |
 
 The FOV-stratified column reproduces the recorded figures exactly, which validates the harness.
 **Exact-match falls ~14 points on density and ~8.5 on Rouleaux; off-by-one barely moves.** So the
 composite still lands in the right neighbourhood on an unseen slide — it is the exact bucket call
 that was flattered.
 
-Two cautions on over-reading it: the leave-one-slide-out Rouleaux CV rho of 0.122 is an artifact of
-9 of 11 folds holding 1–4 FOVs (one 4-FOV fold scores −0.949); the two 324-FOV folds average +0.658.
-And those two folds disagree sharply — density held-out rho +0.831 vs +0.454 — so with a two-slide
-calibration set the generalization estimate is itself unstable.
+**Do not read that Rouleaux CV rho of 0.122 as the model failing to rank.** Leave-one-slide-out means
+11 folds, and 9 of them hold 1–4 FOVs, where a rank correlation is near-meaningless — one 4-FOV Liberia
+fold scores −0.949 and drags the mean. The two 324-FOV folds carry 648 of the 661 FOVs and are the
+only meaningful estimate:
+
+| held-out slide | n | density exact / off-by-1 / rho | Rouleaux exact / off-by-1 / rho |
+|---|---|---|---|
+| KTR-72502946 | 324 | 0.657 / 0.994 / **+0.831** | 0.608 / 0.966 / +0.847 |
+| KTR-72502948 | 324 | 0.457 / 0.935 / **+0.454** | 0.583 / 0.889 / +0.469 |
+| **mean of the two** | 648 | **0.557 / 0.965 / +0.643** | **0.596 / 0.927 / +0.658** |
+
+So the honest rank correlation on an unseen slide is around **+0.64 / +0.66**, not 0.122. But note the
+second caution in that table: **the two folds disagree sharply** — density held-out rho +0.831 vs
++0.454 depending only on which slide is held out. With a two-slide calibration set the generalization
+estimate is itself unstable, and no single number should be quoted without that range.
 
 **Quote ~0.56 density / ~0.60 Rouleaux exact-match for a new slide**, with off-by-one (~0.96 / ~0.93)
 as the more trustworthy number. Not wrong in the existing code: `percentile_ranges` and

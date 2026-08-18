@@ -26,9 +26,20 @@ only the scalar diffuse fields, which survive.
 (`present or diffuse_halo_flag`) ships alongside as an advisory column, using the same name the
 diverse test uses so the two results files stay comparable.
 
+**Parallelism: threads inside processes, same as the crowding pass.** Threading was always here --
+a `ThreadPoolExecutor` over each slide's FOVs -- but a single process was not enough. The 271-slide
+run managed 19.8 FOV/s against the crowding pass's 31.9, because threads saturate on the GIL well
+before the machine saturates: numpy/cv2 release it for the download and the heavy array work, but
+per-operation dispatch does not. `--procs` fans out over processes, each with its own GIL and its
+own thread pool, on a disjoint shard of slides. Sharding by slide keeps one slide as the checkpoint
+unit, so no two processes ever touch the same CSV.
+
+Sharding is applied *after* the checkpoint skip, so a resumed run spreads the remaining slides
+across processes instead of leaving some shards idle.
+
 Usage:
     python scripts/tanzania-complete-081426/run_overexposure_pass.py --slides NKR-72502209
-    python scripts/tanzania-complete-081426/run_overexposure_pass.py --threads 8
+    python scripts/tanzania-complete-081426/run_overexposure_pass.py --procs 8 --threads 8
 """
 import argparse
 import csv
@@ -202,12 +213,50 @@ def run_slide(box, slide_id, fov_ids, out_csv, args):
     return rows, errors, wall, n_present, n_folded
 
 
+def spawn_shards(args):
+    """Re-invoke this script once per shard, each with its own interpreter and GIL.
+
+    Subprocesses rather than multiprocessing so a child that dies cannot take the parent's
+    bookkeeping with it, and so each shard's stdout and exit code stand alone. Same shape as
+    run_crowding_pass.py's fan-out.
+    """
+    import subprocess
+
+    base = [sys.executable, str(Path(__file__).resolve()),
+            "--threads", str(args.threads), "--fov-stride", str(args.fov_stride)]
+    if args.slides:
+        base += ["--slides", *args.slides]
+    if args.limit:
+        base += ["--limit", str(args.limit)]
+    if args.limit_fovs:
+        base += ["--limit-fovs", str(args.limit_fovs)]
+    if args.force:
+        base += ["--force"]
+    if args.include_non_catalog:
+        base += ["--include-non-catalog"]
+
+    children = [subprocess.Popen(base + ["--shard", str(i), "--shard-count", str(args.procs)],
+                                 cwd=str(FLUOR_ROOT))
+                for i in range(args.procs)]
+    codes = [c.wait() for c in children]
+    failed = [i for i, code in enumerate(codes) if code != 0]
+    if failed:
+        print(f"shards {failed} exited non-zero: {codes}")
+        return 1
+    return 0
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--threads", type=int, default=8,
-                        help="concurrent GCS streams; the pipeline-runtime measurements put "
-                             "the GCS-bound optimum at 4-8")
+                        help="threads per process; the GCS-bound optimum is 4-8")
+    parser.add_argument("--procs", type=int, default=1,
+                        help="processes to fan out over, each running its own thread pool on a "
+                             "disjoint shard of slides. >1 re-invokes this script per shard. "
+                             "Threads alone saturate on the GIL well before the machine does")
+    parser.add_argument("--shard", type=int, default=0, help=argparse.SUPPRESS)
+    parser.add_argument("--shard-count", type=int, default=1, help=argparse.SUPPRESS)
     parser.add_argument("--slides", nargs="*", default=None)
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--limit-fovs", type=int, default=None)
@@ -217,6 +266,9 @@ def main():
                         help="also score slides the index carries for regression only "
                              "(in_catalog=False), e.g. KTR-72502946")
     args = parser.parse_args()
+
+    if args.procs > 1 and args.shard_count == 1:
+        return spawn_shards(args)
 
     if not SLIDE_INDEX_JSON.exists():
         raise SystemExit(f"{SLIDE_INDEX_JSON} not found -- run the crowding subproject's "
@@ -255,7 +307,13 @@ def main():
         if args.limit and len(targets) >= args.limit:
             break
 
-    print(f"[overexposure] {len(targets)} slides to do, {skipped} already complete, "
+    # Sharding happens after the checkpoint skip, so a resumed run spreads only the *remaining*
+    # slides across processes rather than leaving some shards with nothing to do.
+    if args.shard_count > 1:
+        targets = [t for i, t in enumerate(targets) if i % args.shard_count == args.shard]
+
+    tag = "overexposure" if args.shard_count == 1 else f"overexposure:{args.shard}"
+    print(f"[{tag}] {len(targets)} slides to do, {skipped} already complete, "
           f"{args.threads} threads")
     if not targets:
         return 0
@@ -277,12 +335,12 @@ def main():
                                 "n_errors": len(errors), "n_present": n_present,
                                 "n_present_folded": n_folded, "ts": time.time()}) + "\n")
         eta = (len(targets) - i) * (sum(recent) / len(recent)) / 60.0
-        print(f"[overexposure] {slide_id}: {len(rows)} FOVs in {wall:.1f}s "
+        print(f"[{tag}] {slide_id}: {len(rows)} FOVs in {wall:.1f}s "
               f"({len(rows) / wall:.2f} FOV/s), flagged {n_present} "
               f"(folded {n_folded}), {len(errors)} err | {i}/{len(targets)}, "
               f"ETA {eta:.0f} min", flush=True)
 
-    print(f"[overexposure] done: {len(targets)} slides, {total_flagged} FOVs flagged, "
+    print(f"[{tag}] done: {len(targets)} slides, {total_flagged} FOVs flagged, "
           f"{total_errors} errors")
     return 0
 
