@@ -196,6 +196,25 @@ order lines up with anything — four hues would discard the ordering. Ramp step
 of the reference blue ramp, validated for the light surface (adjacent OKLCH ΔL 0.093 / 0.095 /
 0.143 against a 0.06 floor; lightest step 2.06:1 contrast).
 
+#### Is the slide mean the right way to aggregate? Yes — measured, not assumed
+
+The row above uses the **mean** of a slide's per-FOV scores, which was an arbitrary choice until it
+was tested. `../annotatability-permutations/` sweeps 52 alternatives against it on the 270
+non-calibration slides — median, all 20 percentiles of a slide's FOV distribution, its range /
+stdev / MAD / IQR, the mean of its top X% most crowded FOVs for X = 95…5, and the fraction of FOVs
+above each bucket cut.
+
+**No alternative is stronger than the mean** by a margin the data can resolve (paired bootstrap CI
+on the difference), and the four spread statistics are significantly *weaker* — how much a slide's
+FOVs vary among themselves carries no annotatability signal, only the overall level does. The
+trimmed-mean family declines monotonically as more easy FOVs are trimmed away, which is evidence
+against annotatability being driven by a slide's worst fields. The ceiling is rho ≈ −0.27 whatever
+the aggregation, so the limit sits in the measurement or the label, not in the arithmetic.
+
+That directory also splits the cohort by collection site, which is where the remaining structure
+looks like it is: within-site rho ranges from −0.158 (KTR) to −0.390 (NKR), a wider spread than all
+53 aggregations produce.
+
 ### Every FOV, by slide
 
 ![all FOVs of all slides](plots/fov-strips-all.png)
