@@ -70,7 +70,7 @@ git clone <repo-url> && cd fov-filtering-tool
 
 # The venv convention here is one level ABOVE the subproject, shared with the `fluorescence`
 # and `focus` siblings (each has its own requirements.txt).
-python -m venv .venv
+python3 -m venv .venv                # Windows: py -m venv .venv
 source .venv/bin/activate            # Windows: .venv\Scripts\activate
 
 cd crowding-crenation
@@ -84,6 +84,10 @@ opencv-python's two runtime shared libs — the same thing
 ```bash
 sudo apt-get install -y python3-venv python3-pip libgl1 libglib2.0-0
 ```
+
+macOS and Windows need no equivalent: `libGL.so.1` is a Linux/X11 dependency, and the
+opencv-python wheels for those platforms do not link it. On Apple Silicon all seven
+requirements ship cp312 arm64 wheels, so nothing compiles from source.
 
 Run these scripts **by path, from the `crowding-crenation` directory** — not via `python -m`.
 `score_fov_v2.py` does `from _v2_common import ...`, which relies on its own directory being
