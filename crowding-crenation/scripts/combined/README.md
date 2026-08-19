@@ -35,9 +35,166 @@ loads at inference time. This is the key difference from the classical `src/comp
 pipeline in the repo root README: there, weights are hand-adjusted from correlation analysis;
 here, they're fit.
 
+To score a directory of FOVs with the already-committed fit, see **Running it on your own FOVs**
+below — it is one command.
+
+## Running it on your own FOVs
+
+Scoring is **inference only** — you do not run the calibration chain. The fit is already committed
+to this repo as a params JSON, so scoring a new dataset is one command:
+
 ```bash
-python scripts/combined/score_fov_v2.py data/raw/some-dataset --params data/results/density-rouleaux-v2/density_overlap_v2.2_params.json --out-csv out.csv
+python scripts/combined/score_fov_v2.py data/raw/my-dataset \
+    --out-csv data/results/my-dataset/scores.csv --workers 8
 ```
+
+`--params` is omitted on purpose: it defaults to `density_overlap_v2.2-optimized_params.json`
+(`_v2_common.DEFAULT_SCORING_PARAMS`), which **is** the current v2.2 fit — same 661 FOVs, same
+procedure as `density_overlap_v2.2_params.json`, refit at `lbp_step=16` / `blur_downsample=4` for
+6.3x less compute per FOV and *zero* label changes. So "just run v2.2" is the default. Pass
+`--params data/results/density-rouleaux-v2/density_overlap_v2.2_params.json` only if you
+specifically want the full-resolution fit (~6x slower, same labels). Older examples in this repo
+pass it explicitly, which is why it can look mandatory.
+
+The other three scripts in the chain (`merge_labels_v2.py`, `extract_features_v2.py`,
+`calibrate_v2*.py`) exist to *refit* the weights against manually labeled FOVs. Running them is
+not how you score a new dataset — see "What to tell Claude" below.
+
+### Setup, from nothing
+
+Python 3.12 and seven pip packages. CPU only; there is no GPU or accelerator anywhere in this
+pipeline.
+
+```bash
+git clone <repo-url> && cd fov-filtering-tool
+
+# The venv convention here is one level ABOVE the subproject, shared with the `fluorescence`
+# and `focus` siblings (each has its own requirements.txt).
+python -m venv .venv
+source .venv/bin/activate            # Windows: .venv\Scripts\activate
+
+cd crowding-crenation
+pip install -r requirements.txt
+```
+
+On a bare Linux box `import cv2` fails with an `ImportError` about `libGL.so.1` until you add
+opencv-python's two runtime shared libs — the same thing
+`scripts/tanzania-complete-081426/vm-startup.sh` does on a minimal Debian image:
+
+```bash
+sudo apt-get install -y python3-venv python3-pip libgl1 libglib2.0-0
+```
+
+Run these scripts **by path, from the `crowding-crenation` directory** — not via `python -m`.
+`score_fov_v2.py` does `from _v2_common import ...`, which relies on its own directory being
+`sys.path[0]`; `_v2_common.py` then inserts the repo root so `from src.*` resolves. The params
+default is an absolute path, so your cwd only affects the relative paths *you* pass.
+
+### What it accepts as input
+
+A single image file, a directory of them, or a `gs://` URI. Recognized extensions are `.png`,
+`.tif`, `.tiff`, `.jpg`, `.jpeg`, `.bmp` (`src/pipeline.py::IMAGE_EXTENSIONS`). Inference needs
+**no manifest CSV and no filename convention** — it globs the directory. (The `fov_id` filename
+templates in `_v2_common.py` are for joining *labels* during calibration, not for scoring.)
+
+**The directory listing is not recursive.** `list_image_paths` uses `Path.iterdir()`, so pointing
+it at a parent of per-slide subdirectories finds nothing, prints an empty result and exits 0 —
+with no warning. Point it at one flat directory of images, or run it once per slide directory.
+
+### Reading the output
+
+Without `--out-csv`, results print to stdout as JSON. With it, you get these nine columns:
+
+| column | what it is |
+|---|---|
+| `filename`, `path` | as passed in; `path` keeps the `gs://` URI for streamed inputs |
+| `density_score` | `[0, 1]` composite, higher = denser |
+| `density_label` | `sparser` / `monolayer` / `slightly dense` / `dense` / `very dense` |
+| `overlap_score` | `[0, 1]` composite for cell overlap/stacking |
+| `overlap_label` | `no rouleaux` / `slight rouleaux` / `some rouleaux` / `rouleaux` / `heavy rouleaux` (the axis displayed as "Rouleaux") |
+| `saturation_score` | diagnostic only — **not acted on**; `apply_saturation_override` is a documented no-op pending a fitted cutoff |
+| `empty_field_gated` | `True` = the empty-field override fired; both labels were forced to the bottom bucket and the composites discarded |
+| `error` | set instead of scores when an image is unreadable |
+
+Two of those deserve a look before you trust a run:
+
+- **`error`** — an unreadable or corrupt image is caught per image, so one bad file never aborts
+  the pass. A full-looking row count can therefore still hide failures. Confirm the column is
+  empty before drawing conclusions.
+- **`empty_field_gated`** — not an error; the scorer catching itself. On a field with no cells
+  Otsu has no bimodal histogram to split, so `coverage` reads background noise as dense tissue.
+  When all four of `otsu_separability`, `lbp_entropy`, `glcm_contrast` and
+  `edge_density_unmasked` fall below their calibration p2 floor, the gate returns the bottom
+  bucket on both axes instead. See the "Empty-field gate" note under Version history.
+
+The plot scripts here (`plot_results_v2.py`, `plot_bucket_comparison_v2.py`) plot model output
+*against manual labels*, so they are calibration tools — not part of scoring a new dataset. For a
+worked example of a single-command dataset driver that also emits plots and an
+out-of-distribution report, see `scripts/ziba_test.py` or `scripts/nigeria_081226.py`.
+
+### How long it takes, and `--workers`
+
+Measured on 2800x2800 monochrome PNGs with the default params:
+
+| | wall per FOV |
+|---|---|
+| `--workers 1` | 0.744 s |
+| `--workers 8`, local images | **0.200 s** (3.7x) |
+| `--workers 4`, GCS-streamed | 0.715 s |
+| full-resolution v2.2 params | ~6x the compute of the above |
+
+Add ~2 s of interpreter and import startup per invocation. In practice: 24 local FOVs in about
+10 s wall, a few hundred in a couple of minutes, and the 661-FOV calibration set's feature pass in
+3.4 min. A laptop is a perfectly reasonable place to run this — only the cohort-scale passes (tens
+of thousands of FOVs) were worth a VM.
+
+`--pool thread` is the default and should stay that way: the work releases the GIL almost
+throughout — blob downloads are network IO, the compute is cv2/numpy — so threads parallelize it
+at ~2.4x a process pool while sharing one address space, and 8 of them fit on a machine where
+`Pool(4)` ran out of memory outright. **Use `--workers 8` for local images and `--workers 4` for
+`gs://`**: past 4 concurrent streams the per-thread `storage.Client` connections stop paying for
+themselves. The thread knee is at 8 even on a 32-vCPU VM. Full measurements in
+`data/results/pipeline-runtime/README.md`.
+
+### Scoring straight from a GCS bucket
+
+Any input can be a `gs://bucket/prefix` URI — images stream into memory rather than downloading to
+disk first. This uses [application default credentials](https://cloud.google.com/docs/authentication/application-default-credentials),
+so run `gcloud auth application-default login` (or set `GOOGLE_APPLICATION_CREDENTIALS`) once
+beforehand.
+
+```bash
+gcloud auth application-default login    # once
+
+python scripts/combined/score_fov_v2.py gs://tanzania_02032026/TZ2025-Box5/KTR-72502946/ \
+    --out-csv data/results/my-slide/scores.csv --workers 4
+```
+
+### What to tell Claude
+
+If you would rather not remember the flags, paste this:
+
+> Score every FOV in `<local-dir-or-gs://-uri>` using the combined v2.2 scorer at
+> `scripts/combined/score_fov_v2.py`, run from the `crowding-crenation` directory. Keep the
+> default params (v2.2-optimized) and write a CSV to `<out-path>`. Use `--workers 8` for local
+> images or `--workers 4` for `gs://`. Then summarise the `density_label` and `overlap_label`
+> distributions, and tell me about any rows where `error` is non-empty or `empty_field_gated` is
+> True.
+
+Ask for *scoring*, and say so explicitly. "Run the combined pipeline" can reasonably be read as
+the calibration chain — `merge_labels_v2.py` -> `extract_features_v2.py` -> `calibrate_v2.2.py` —
+which refits the weights against the manual label pool and overwrites a params JSON. That is a
+deliberate act of recalibration: far slower, and it needs manual labels your new dataset probably
+does not have.
+
+### Before you trust the numbers on a new stain
+
+Every feature is a raw pixel/intensity statistic, so it responds to staining protocol, scanner and
+illumination as well as to true cell density — and only 13 of the 661 calibration FOVs are
+non-Tanzania. The failure is not subtle when it happens: Liberia's `dpc-051` reads `coverage` 0.79
+where Tanzania slides sit at ~0.18–0.21. Spot-check a handful of FOVs against manual labels before
+trusting output on a new slide or stain, and expect to refit if there is a systematic offset. See
+"Known limitation (all versions)" under Version history.
 
 ## Feature vector (`_v2_common.compute_features`)
 
