@@ -159,7 +159,8 @@ report how the old `sparser` FOVs redistribute across `no cells` / `few cells` /
 separate result. That redistribution is itself the first evidence on where the new boundaries
 actually fall.
 
-**Done, 2026-08-21.** The filled-in worksheet is
+**Done, 2026-08-21.** Full write-up, with per-level ceilings and kappas, in
+`scripts/combined/combined-v3/annotator-agreement.md`. The filled-in worksheet is
 `../../labels/blind-relabels-082126/blind-relabels-annotations.txt` -- annotation input, so it
 sits with the other label sets rather than here. Collapsed to the 5-level vocabulary,
 self-agreement is 41/50 on density (82%, 82% weighted) and 41/47 on overlap (87%, 92%

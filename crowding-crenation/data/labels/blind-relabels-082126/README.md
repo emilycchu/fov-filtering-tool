@@ -15,6 +15,10 @@ that script's other output, in `data/results/combined-v3/blind-relabels-KEY.csv`
 generated, and reproducible from the seed. The 203 MB image zip is gitignored for the same
 reason.
 
+The full write-up of what this pass measured -- per-level ceilings, kappas, per-slide breakdown,
+and what it implies for v3 -- is `scripts/combined/combined-v3/annotator-agreement.md`. This file
+covers the label set itself; the summary below is the short version.
+
 ## First read
 
 Scored after `collapse_to_v2_density` folds the two new rungs back to `sparser`, so a vocabulary
