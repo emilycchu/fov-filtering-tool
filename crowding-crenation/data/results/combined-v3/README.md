@@ -162,11 +162,14 @@ actually fall.
 **Done, 2026-08-21.** The filled-in worksheet is
 `../../labels/blind-relabels-082126/blind-relabels-annotations.txt` -- annotation input, so it
 sits with the other label sets rather than here. Collapsed to the 5-level vocabulary,
-self-agreement is 41/50 on density (82%, 82% weighted) and 41/50 on overlap (82%, 88% weighted),
-both axes right on 35/50. **v2.2's 55% density exact-match is therefore well short of the
-ceiling, and further feature work is justified.** The disagreements cluster: `slightly dense`
-lost 6 of 7 FOVs and the 4th overlap rung `rouleaux` lost all 3. Neither new bottom rung was
-used, so the redistribution question is still open -- see that set's README.
+self-agreement is 41/50 on density (82%, 82% weighted) and 41/47 on overlap (87%, 92%
+weighted). **v2.2's 55% density exact-match is therefore well short of the ceiling, and further
+feature work is justified.** The overlap denominator is 47 because the annotator had lost track
+of the `rouleaux` rung by pass 2, so its 3 FOVs could not have agreed -- an artifact of the
+worksheet, which needs the vocabulary repeated inline before the 648-FOV worklist reuses it.
+The one real cluster is `slightly dense`, which lost 6 of its 7 FOVs and looks like a boundary
+rather than a regime. Neither new bottom rung was used, so the redistribution question is still
+open -- see that set's README.
 
 ## The run
 
