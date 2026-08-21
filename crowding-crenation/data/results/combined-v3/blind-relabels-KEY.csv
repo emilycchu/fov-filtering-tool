@@ -1,0 +1,51 @@
+blind_id,fov_key,dataset,filename,original_density,original_overlap,cell_density,cell_overlap,sampling_weight
+fov-01,tanzania-080526/dpc-081-KTR-72502946.png,tanzania-080526,dpc-081-KTR-72502946.png,very dense,heavy rouleaux,very dense,heavy rouleaux,1.183128
+fov-02,tanzania-073026/dpc-203-KTR-72502948.png,tanzania-073026,dpc-203-KTR-72502948.png,very dense,no rouleaux,very dense,no rouleaux,0.077160
+fov-03,tanzania-080526/dpc-184-KTR-72502946.png,tanzania-080526,dpc-184-KTR-72502946.png,monolayer,no rouleaux,monolayer,no rouleaux,1.056505
+fov-04,tanzania-073026/dpc-048-KTR-72502948.png,tanzania-073026,dpc-048-KTR-72502948.png,monolayer,no rouleaux,monolayer,no rouleaux,1.056505
+fov-05,tanzania-080526/dpc-039-KTR-72502946.png,tanzania-080526,dpc-039-KTR-72502946.png,monolayer,no rouleaux,monolayer,no rouleaux,1.056505
+fov-06,tanzania-073026/dpc-305-KTR-72502948.png,tanzania-073026,dpc-305-KTR-72502948.png,monolayer,slight rouleaux,monolayer,slight rouleaux,1.080247
+fov-07,tanzania-073026/dpc-047-KTR-72502948.png,tanzania-073026,dpc-047-KTR-72502948.png,monolayer,no rouleaux,monolayer,no rouleaux,1.056505
+fov-08,tanzania-080526/dpc-067-KTR-72502946.png,tanzania-080526,dpc-067-KTR-72502946.png,slightly dense,some rouleaux,slightly dense,some rouleaux,1.234568
+fov-09,tanzania-080526/dpc-144-KTR-72502946.png,tanzania-080526,dpc-144-KTR-72502946.png,slightly dense,no rouleaux,slightly dense,no rouleaux,1.080247
+fov-10,tanzania-073026/dpc-195-KTR-72502948.png,tanzania-073026,dpc-195-KTR-72502948.png,monolayer,some rouleaux,monolayer,some rouleaux,0.077160
+fov-11,tanzania-080526/dpc-287-KTR-72502946.png,tanzania-080526,dpc-287-KTR-72502946.png,monolayer,no rouleaux,monolayer,no rouleaux,1.056505
+fov-12,tanzania-080526/dpc-242-KTR-72502946.png,tanzania-080526,dpc-242-KTR-72502946.png,monolayer,no rouleaux,monolayer,no rouleaux,1.056505
+fov-13,tanzania-073026/dpc-251-KTR-72502948.png,tanzania-073026,dpc-251-KTR-72502948.png,slightly dense,slight rouleaux,slightly dense,slight rouleaux,1.311728
+fov-14,tanzania-073026/dpc-161-KTR-72502948.png,tanzania-073026,dpc-161-KTR-72502948.png,sparser,no rouleaux,sparser,no rouleaux,1.234568
+fov-15,tanzania-080526/dpc-310-KTR-72502946.png,tanzania-080526,dpc-310-KTR-72502946.png,sparser,no rouleaux,sparser,no rouleaux,1.234568
+fov-16,tanzania-073026/dpc-164-KTR-72502948.png,tanzania-073026,dpc-164-KTR-72502948.png,monolayer,no rouleaux,monolayer,no rouleaux,1.056505
+fov-17,tanzania-080526/dpc-220-KTR-72502946.png,tanzania-080526,dpc-220-KTR-72502946.png,monolayer,no rouleaux,monolayer,no rouleaux,1.056505
+fov-18,tanzania-080526/dpc-226-KTR-72502946.png,tanzania-080526,dpc-226-KTR-72502946.png,slightly dense,rouleaux,slightly dense,rouleaux,0.308642
+fov-19,tanzania-080526/dpc-266-KTR-72502946.png,tanzania-080526,dpc-266-KTR-72502946.png,monolayer,no rouleaux,monolayer,no rouleaux,1.056505
+fov-20,tanzania-080526/dpc-225-KTR-72502946.png,tanzania-080526,dpc-225-KTR-72502946.png,monolayer,no rouleaux,monolayer,no rouleaux,1.056505
+fov-21,tanzania-080526/dpc-303-KTR-72502946.png,tanzania-080526,dpc-303-KTR-72502946.png,monolayer,no rouleaux,monolayer,no rouleaux,1.056505
+fov-22,tanzania-080526/dpc-154-KTR-72502946.png,tanzania-080526,dpc-154-KTR-72502946.png,very dense,heavy rouleaux,very dense,heavy rouleaux,1.183128
+fov-23,tanzania-080526/dpc-256-KTR-72502946.png,tanzania-080526,dpc-256-KTR-72502946.png,monolayer,no rouleaux,monolayer,no rouleaux,1.056505
+fov-24,tanzania-080526/dpc-300-KTR-72502946.png,tanzania-080526,dpc-300-KTR-72502946.png,monolayer,no rouleaux,monolayer,no rouleaux,1.056505
+fov-25,tanzania-073026/dpc-015-KTR-72502948.png,tanzania-073026,dpc-015-KTR-72502948.png,monolayer,slight rouleaux,monolayer,slight rouleaux,1.080247
+fov-26,tanzania-073026/dpc-035-KTR-72502948.png,tanzania-073026,dpc-035-KTR-72502948.png,slightly dense,slight rouleaux,slightly dense,slight rouleaux,1.311728
+fov-27,tanzania-073026/dpc-185-KTR-72502948.png,tanzania-073026,dpc-185-KTR-72502948.png,slightly dense,some rouleaux,slightly dense,some rouleaux,1.234568
+fov-28,tanzania-080526/dpc-129-KTR-72502946.png,tanzania-080526,dpc-129-KTR-72502946.png,monolayer,no rouleaux,monolayer,no rouleaux,1.056505
+fov-29,tanzania-073026/dpc-166-KTR-72502948.png,tanzania-073026,dpc-166-KTR-72502948.png,sparser,slight rouleaux,sparser,slight rouleaux,0.077160
+fov-30,tanzania-080526/dpc-003-KTR-72502946.png,tanzania-080526,dpc-003-KTR-72502946.png,monolayer,no rouleaux,monolayer,no rouleaux,1.056505
+fov-31,tanzania-080526/dpc-010-KTR-72502946.png,tanzania-080526,dpc-010-KTR-72502946.png,monolayer,no rouleaux,monolayer,no rouleaux,1.056505
+fov-32,tanzania-080526/dpc-289-KTR-72502946.png,tanzania-080526,dpc-289-KTR-72502946.png,sparser,no rouleaux,sparser,no rouleaux,1.234568
+fov-33,tanzania-073026/dpc-304-KTR-72502948.png,tanzania-073026,dpc-304-KTR-72502948.png,monolayer,slight rouleaux,monolayer,slight rouleaux,1.080247
+fov-34,tanzania-080526/dpc-159-KTR-72502946.png,tanzania-080526,dpc-159-KTR-72502946.png,dense,rouleaux,dense,rouleaux,1.041667
+fov-35,tanzania-073026/dpc-291-KTR-72502948.png,tanzania-073026,dpc-291-KTR-72502948.png,monolayer,no rouleaux,monolayer,no rouleaux,1.056505
+fov-36,tanzania-080526/dpc-141-KTR-72502946.png,tanzania-080526,dpc-141-KTR-72502946.png,dense,some rouleaux,dense,some rouleaux,0.694444
+fov-37,tanzania-080526/dpc-277-KTR-72502946.png,tanzania-080526,dpc-277-KTR-72502946.png,monolayer,no rouleaux,monolayer,no rouleaux,1.056505
+fov-38,tanzania-080526/dpc-231-KTR-72502946.png,tanzania-080526,dpc-231-KTR-72502946.png,dense,heavy rouleaux,dense,heavy rouleaux,1.157407
+fov-39,tanzania-080526/dpc-013-KTR-72502946.png,tanzania-080526,dpc-013-KTR-72502946.png,monolayer,no rouleaux,monolayer,no rouleaux,1.056505
+fov-40,tanzania-080526/dpc-258-KTR-72502946.png,tanzania-080526,dpc-258-KTR-72502946.png,monolayer,no rouleaux,monolayer,no rouleaux,1.056505
+fov-41,tanzania-080526/dpc-093-KTR-72502946.png,tanzania-080526,dpc-093-KTR-72502946.png,monolayer,no rouleaux,monolayer,no rouleaux,1.056505
+fov-42,tanzania-080526/dpc-187-KTR-72502946.png,tanzania-080526,dpc-187-KTR-72502946.png,monolayer,no rouleaux,monolayer,no rouleaux,1.056505
+fov-43,tanzania-080526/dpc-019-KTR-72502946.png,tanzania-080526,dpc-019-KTR-72502946.png,monolayer,no rouleaux,monolayer,no rouleaux,1.056505
+fov-44,tanzania-073026/dpc-250-KTR-72502948.png,tanzania-073026,dpc-250-KTR-72502948.png,slightly dense,slight rouleaux,slightly dense,slight rouleaux,1.311728
+fov-45,tanzania-073026/dpc-133-KTR-72502948.png,tanzania-073026,dpc-133-KTR-72502948.png,sparser,some rouleaux,sparser,some rouleaux,0.077160
+fov-46,tanzania-080526/dpc-061-KTR-72502946.png,tanzania-080526,dpc-061-KTR-72502946.png,very dense,heavy rouleaux,very dense,heavy rouleaux,1.183128
+fov-47,tanzania-080526/dpc-139-KTR-72502946.png,tanzania-080526,dpc-139-KTR-72502946.png,dense,rouleaux,dense,rouleaux,1.041667
+fov-48,tanzania-080526/dpc-002-KTR-72502946.png,tanzania-080526,dpc-002-KTR-72502946.png,monolayer,no rouleaux,monolayer,no rouleaux,1.056505
+fov-49,tanzania-073026/dpc-293-KTR-72502948.png,tanzania-073026,dpc-293-KTR-72502948.png,monolayer,no rouleaux,monolayer,no rouleaux,1.056505
+fov-50,tanzania-080526/dpc-200-KTR-72502946.png,tanzania-080526,dpc-200-KTR-72502946.png,monolayer,no rouleaux,monolayer,no rouleaux,1.056505
