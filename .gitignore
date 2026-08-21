@@ -33,3 +33,9 @@ crowding-crenation/data/results/pipeline-runtime/features-blur-ds*.csv
 # from this path, and build_slide_index.py distils the parts this analysis needs into the tracked
 # slides.csv / slide-index.json, so the pipeline is reproducible without publishing the workbook.
 crowding-crenation/data/labels/tanzania-081426/*.xlsx
+
+# The blind re-label image package: 50 full-resolution DPC FOVs, 203 MB -- past GitHub's
+# 100 MB per-file limit, and the largest thing otherwise tracked here is 6 MB. Nothing is
+# lost: build_blind_relabels.py reproduces the zip byte-for-byte from the seed, and the
+# committed blind-relabels-KEY.csv already records which FOV each blind id was.
+crowding-crenation/data/results/combined-v3/blind-relabels.zip
