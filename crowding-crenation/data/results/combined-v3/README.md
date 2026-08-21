@@ -159,6 +159,15 @@ report how the old `sparser` FOVs redistribute across `no cells` / `few cells` /
 separate result. That redistribution is itself the first evidence on where the new boundaries
 actually fall.
 
+**Done, 2026-08-21.** The filled-in worksheet is
+`../../labels/blind-relabels-082126/blind-relabels-annotations.txt` -- annotation input, so it
+sits with the other label sets rather than here. Collapsed to the 5-level vocabulary,
+self-agreement is 41/50 on density (82%, 82% weighted) and 41/50 on overlap (82%, 88% weighted),
+both axes right on 35/50. **v2.2's 55% density exact-match is therefore well short of the
+ceiling, and further feature work is justified.** The disagreements cluster: `slightly dense`
+lost 6 of 7 FOVs and the 4th overlap rung `rouleaux` lost all 3. Neither new bottom rung was
+used, so the redistribution question is still open -- see that set's README.
+
 ## The run
 
 226 negative slides, **73,213 DPC FOVs, 0 errors**, on the `crowding-tz-081426` n2-standard-32 Spot
@@ -183,8 +192,9 @@ and `verify_regression.py` stay valid.
 | `slide-summary-497.csv` | one row per slide, all 497. Same schema as the positives' summary minus the fluorescence columns (those passes are positives-only) |
 | `cohort-497-comparison.md` | the positive-vs-negative comparison and the per-site breakdown |
 | `slide-splits.csv` | the frozen roster: `slide_id, role, truth, site, box, catalog_split, n_fovs, density_mean, quintile, source` |
-| `blind-relabels.zip` | 50 anonymised FOVs + annotation template |
+| `blind-relabels.zip` | 50 anonymised FOVs + annotation template. **Gitignored** -- 203 MB, past GitHub's per-file limit; the seed reproduces it |
 | `blind-relabels-KEY.csv` | the un-blinding key. Do not open before annotating |
+| `../../labels/blind-relabels-082126/` | the completed second pass, plus what it says about the ceiling |
 
 ## Reproducing
 
@@ -219,7 +229,8 @@ published positives numbers by construction. Verified: it reproduces `slide-summ
    `_v3_common.py`. Worklist is no longer blocked.
 2. Generate the 648-FOV worklist (8 slides x 81, stratified within each slide's own score range)
    from `slide-splits.csv`.
-3. Annotate. The 50 blind re-labels can be done in parallel, and ideally first.
+3. Annotate. ~~The 50 blind re-labels can be done in parallel, and ideally first~~ -- done,
+   2026-08-21; the 648 remain.
 4. Build `combined-v3/` proper: `extract_features_v3.py` (adds `hole_density`, measured at partial
    rho 0.547 with overlap and -0.086 with density, ~0.029 s/FOV at 2x mask downsampling),
    `calibrate_v3.py` (nested leave-one-slide-out, slide-balanced sample weights), `evaluate_v3.py`.
