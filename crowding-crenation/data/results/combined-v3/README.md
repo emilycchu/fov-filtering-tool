@@ -227,12 +227,50 @@ reimplementing it, so the gated-FOV convention and the bucket-of-mean rule are i
 published positives numbers by construction. Verified: it reproduces `slide-summary.csv`'s
 `density_mean` bit-for-bit on spot-checked slides.
 
+## Worklist sampling: every 4th FOV
+
+**Decided 2026-08-21: the worklist is every 4th FOV of each slide's 324, not a score-stratified
+draw.** All ten split slides are exactly 324 FOVs, so this is 81 per slide and 648 across the eight
+that are not already annotated -- the same size the stratified plan called for. Only the selection
+rule changed.
+
+The reason is that stratifying within a slide's score range means **choosing v3's training FOVs
+with v2.2's own predictions** -- the model v3 exists to replace. Every-4th needs no scores, so it
+cannot inherit their errors. That is the same circularity the empty-field gate has, and which the
+7-level ordinal above was adopted to break; it would be odd to remove it from the labels and leave
+it in the sampling. Systematic 1-in-4 is also self-weighting, so each slide's annotated subset
+reproduces that slide's own distribution and needs no `sampling_weight` correction of the kind
+`blind-relabels-KEY.csv` carries. It is what makes the estimate above -- ~80 gated FOVs, from a
+12.2% population rate -- exact rather than approximate.
+
+**It does not need to supply the dense end, because that is already annotated.** The two
+pre-annotated slides hold 648 exhaustively labelled FOVs including 51 `dense`, 47 `very dense`, 31
+`rouleaux` and 61 `heavy rouleaux`. The five remaining train slides are Q0-Q3 and are there to
+extend the *low* end of the range, where a self-weighting sample is the right instrument. So the
+floor-per-bucket logic that `build_blind_relabels.py` needed does not apply here.
+
+Two caveats that do survive:
+
+- **The dense end is single-site.** Both pre-annotated slides are KTR / Box5, and 78 of the 98
+  dense-or-denser FOVs and 74 of the 92 top-two-overlap FOVs come from `KTR-72502946` alone. The
+  multi-site breadth the split was chosen for is therefore concentrated at the sparse end, and a
+  Box5 imaging characteristic could be learned as a proxy for density. `KIT-62500670` (Q4,
+  `slightly dense`, Box1) is the densest unannotated train slide and so the main non-KTR
+  contribution to the dense end -- its 81 do the most structural work of any slide in the
+  worklist.
+- **Check for raster aliasing before starting.** 324 = 18^2, so if acquisition rasters an 18x18
+  grid, stepping by 4 across rows of 18 (18 mod 4 = 2) alternates between two even-column phases
+  and never lands on an odd column -- half the stage columns unsampled. The per-FOV CSVs carry
+  only `fov_id`, so this cannot be checked from this repo. If it holds, rotate the start offset
+  per row, or step by a value coprime to the row length.
+
 ## Next
 
 1. ~~Settle the empty-field vocabulary~~ -- done, see above: 7-level density ordinal,
    `_v3_common.py`. Worklist is no longer blocked.
-2. Generate the 648-FOV worklist (8 slides x 81, stratified within each slide's own score range)
-   from `slide-splits.csv`.
+2. Generate the 648-FOV worklist from `slide-splits.csv`: 8 slides x 81, **every 4th FOV** rather
+   than score-stratified -- see "Worklist sampling" above for why, and for the aliasing check to
+   run first.
 3. Annotate. ~~The 50 blind re-labels can be done in parallel, and ideally first~~ -- done,
    2026-08-21; the 648 remain.
 4. Build `combined-v3/` proper: `extract_features_v3.py` (adds `hole_density`, measured at partial
