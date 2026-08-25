@@ -5,6 +5,11 @@ Follow-up to `data/results/tanzania-073026/tanzania-comparison/README.md`, which
 relationship with manual overlap labels (marginal rho=-0.19, partial rho=-0.10).
 Produced by `scripts/diagnose_rouleaux.py`.
 
+The segmentation collapse below is one cause. A second, independent one -- the
+per-FOV reference area against which "merged" is defined -- was identified later
+and is recorded in "A second cause: the reference area is per-FOV" at the end of
+this file.
+
 ## Method
 
 Ran `score_new_slide.py`'s own `segment()`/`touching_pairs()` code (unmodified) on
@@ -83,3 +88,85 @@ directly and never need to correctly split touching cells apart.
   true failure -- several of the orange regions above are single watershed
   labels spanning a large fraction of the entire frame, not "slightly
   oversized" cells.
+
+---
+
+# A second cause: the reference area is per-FOV
+
+The finding above attributes `rouleaux_fraction`'s failure to watershed collapse. That
+holds, but it is not the only mechanism. `score_new_slide.py:104` sets the yardstick for
+"merged" from the FOV's own area distribution:
+
+```python
+reference_area = np.percentile(raw_props["area"], 75)
+fragment_floor = FRAGMENT_AREA_RATIO * reference_area   # 0.35
+merged_ceiling = MERGED_AREA_RATIO * reference_area     # 1.6
+```
+
+In an overlapped field the area distribution is itself inflated by the merging, so
+`reference_area` rises with the thing it is used to detect, and `merged_ceiling` rises
+with it. Two consequences:
+
+- **The bias attenuates the signal where it matters most.** A higher ceiling flags *fewer*
+  blobs as merged, and it is highest in the most overlapped fields. `n_merged` is not just
+  an undercount (already noted in the caveats above) -- it is an undercount whose severity
+  scales with overlap.
+- **Values are not on a common scale across FOVs.** Each FOV is measured against its own
+  yardstick, so `n_merged` and `rouleaux_fraction` are not comparable between FOVs even
+  when the segmentation works.
+
+This matters beyond `rouleaux_fraction`: any future feature keyed to `merged_ceiling`
+inherits the same blindness, so the reference needs fixing before such a feature is worth
+building.
+
+## What the existing pairs show
+
+Recomputed from `diagnostic-summary.csv` alone (frame = 2800x2800 = 7,840,000 px; no new
+segmentation run). Both quantities below are normalized by **foreground**, not by frame
+area, which is what makes them comparable at matched coverage:
+
+| pair | FOV | tag | coverage | mean fg px / cell | n_merged / n_cells | rouleaux_fraction |
+|---|---|---|---|---|---|---|
+| 0 | 205 | heavy rouleaux | 0.555 | 915 | 0.160 | 0.119 |
+| 0 | 61 | no rouleaux | 0.555 | 1241 | 0.192 | 0.105 |
+| 1 | 206 | heavy rouleaux | 0.620 | 1189 | 0.172 | 0.117 |
+| 1 | 242 | no rouleaux | 0.619 | 1095 | 0.153 | 0.127 |
+| 2 | 210 | heavy rouleaux | 0.663 | 1786 | 0.192 | 0.131 |
+| 2 | 236 | no rouleaux | 0.664 | 1175 | 0.125 | 0.139 |
+| 3 | 215 | heavy rouleaux | 0.750 | 2935 | 0.176 | 0.118 |
+| 3 | 248 | no rouleaux | 0.724 | 1887 | 0.134 | 0.088 |
+
+Heavy-rouleaux / control ratio per pair:
+
+| pair | mean fg px / cell | n_merged / n_cells | rouleaux_fraction |
+|---|---|---|---|
+| 0 | 0.74 | 0.83 | 1.14 |
+| 1 | 1.09 | 1.13 | 0.92 |
+| 2 | 1.52 | 1.54 | 0.94 |
+| 3 | 1.56 | 1.31 | 1.35 |
+
+**Both foreground-normalized quantities rank the heavy-rouleaux FOV above its
+coverage-matched control in 3 of 4 pairs; `rouleaux_fraction` manages 2 of 4, which is
+chance.** Pair 0 is the exception on both new measures -- and is one of the two pairs
+`rouleaux_fraction` happens to get right, so the measures disagree on the same pair rather
+than one strictly dominating.
+
+## What this does not show
+
+- **Not a validation.** 4 pairs on one slide, and these are proxies assembled from summary
+  columns that already exist, not the fixed-reference feature itself. 3/4 on n=4 is one
+  coin flip away from 2/4.
+- **The drift is not a clean trend.** Isolating the four `no rouleaux` controls, so coverage
+  varies and overlap does not, apparent mean fg px/cell runs 1241 (cov 0.555) -> 1095
+  (0.619) -> 1175 (0.664) -> 1887 (0.724): roughly flat, then rising sharply at the top.
+  So the contamination is real but concentrated at high coverage rather than proportional
+  to it, and a single ratio across the whole span would overstate it.
+- No refit or params change was made.
+
+## Fix direction
+
+Estimate the single-cell reference so that it is *not* a function of the overlap level:
+from the modal area, or from a low percentile among blobs that are convex and unmerged
+(isolated singles being the cleanest single-cell exemplars available), and hold it **fixed
+per slide** rather than per FOV, so an overlapped FOV is measured against the same yardstick
+as a clean one. Emit it alongside the original so the change stays attributable.

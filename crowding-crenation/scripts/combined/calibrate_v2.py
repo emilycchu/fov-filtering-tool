@@ -120,12 +120,31 @@ def normalize_matrix(rows, feature_names, ranges):
     return X
 
 
-def fit_ridge(X, y, alpha=RIDGE_ALPHA):
+def fit_ridge(X, y, alpha=RIDGE_ALPHA, sample_weight=None):
+    """Ridge coefficients, intercept dropped. `sample_weight` solves (A'WA + reg)b = A'Wy.
+
+    v3 passes per-FOV weights of `1 / n_fovs_in_slide` so that each slide group contributes
+    equally instead of the two exhaustively-annotated slides supplying 61% of the rows. This
+    lives here rather than in a v3-local copy because the normal equations are the one place a
+    second implementation could diverge silently and still produce plausible weights.
+
+    The `None` fast path is deliberate, not an optimization: multiplying by an array of exact
+    1.0 still reorders the floating-point accumulation in `A.T @ A`, and `verify_regression.py`
+    pins the deployed v2 outputs at 1e-9. Taking the unweighted branch keeps v2 bit-identical.
+    """
     n, k = X.shape
     A = np.column_stack([np.ones(n), X])
     reg = np.eye(k + 1) * alpha
     reg[0, 0] = 0.0
-    beta = np.linalg.solve(A.T @ A + reg, A.T @ y)
+    if sample_weight is None:
+        lhs, rhs = A.T @ A, A.T @ y
+    else:
+        w = np.asarray(sample_weight, dtype=float)
+        if w.shape != (n,):
+            raise ValueError(f"sample_weight has shape {w.shape}, expected {(n,)}")
+        Aw = A * w[:, None]
+        lhs, rhs = A.T @ Aw, Aw.T @ y
+    beta = np.linalg.solve(lhs + reg, rhs)
     return beta[1:]
 
 
@@ -320,7 +339,16 @@ def confusion_matrix(true_idx, pred_idx, n_levels):
 
 # --- axis-separation check ---
 
-def axis_separation_check(rows, oof_density_idx, oof_overlap_idx, min_delta=2):
+def axis_separation_check(rows, oof_density_idx, oof_overlap_idx, min_delta=2,
+                          density_levels=None, overlap_levels=None):
+    """`density_levels`/`overlap_levels` default to v2's 5-level vocabularies.
+
+    They have to be injectable for v3: the module-level lists are hard-indexed below to name a
+    predicted level, and v3's density axis has 7 rungs, so a prediction of 5 or 6 would raise
+    IndexError against v2's list.
+    """
+    density_levels = DENSITY_LEVELS if density_levels is None else density_levels
+    overlap_levels = OVERLAP_LEVELS if overlap_levels is None else overlap_levels
     density_rank = np.array([r["density_ord"] for r in rows])
     overlap_rank = np.array([r["overlap_ord"] for r in rows])
     delta = density_rank - overlap_rank
@@ -339,8 +367,8 @@ def axis_separation_check(rows, oof_density_idx, oof_overlap_idx, min_delta=2):
             qualitative.append({
                 "fov_key": r["fov_key"],
                 "manual_density": r["density_label"], "manual_overlap": r["overlap_label"],
-                "predicted_density": DENSITY_LEVELS[oof_density_idx[i]],
-                "predicted_overlap": OVERLAP_LEVELS[oof_overlap_idx[i]],
+                "predicted_density": density_levels[oof_density_idx[i]],
+                "predicted_overlap": overlap_levels[oof_overlap_idx[i]],
             })
     return {"min_delta": min_delta, "n_disagreement": n, "matches": matches,
             "sign_match_rate": matches / n if n else None,

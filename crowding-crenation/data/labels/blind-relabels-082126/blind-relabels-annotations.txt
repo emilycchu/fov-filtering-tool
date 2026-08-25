@@ -1,0 +1,81 @@
+Blind re-annotation set -- worksheet
+====================================
+
+50 FOVs, filenames randomised. Slide identity, FOV number and the previous labels are
+deliberately not recoverable from this folder -- that is the point, so please do not go
+looking for them before annotating.
+
+One line per image. The id matches the .png filename, so fov-07 below is fov-07.png.
+Write the tags after the colon, comma-separated:
+
+  density (pick exactly one):
+      No Cells        nothing to judge -- blank field, or debris only
+      Few Cells       cells countable one by one; too few to have a packing regime
+      Sparser         a real but thin monolayer; packing is judgeable
+      Monolayer | Slightly Dense | Dense | Very Dense
+  overlap (optional; omit for none. Not allowed on No Cells):
+      Slight Rouleaux | Some Rouleaux | Rouleaux | Heavy Rouleaux
+  quality (optional, repeatable):
+      Crenated | Unfocused | Overexposed | Artifact | Other Dimples
+
+Examples:  fov-07: Slightly Dense, Some Rouleaux, Crenated
+           fov-08: Few Cells, Slight Rouleaux
+           fov-09: No Cells
+
+The density question to ask yourself is "can I judge how packed this field is?"
+Nothing there at all -> No Cells. Countable one by one -> Few Cells. Thin but genuine
+monolayer -> Sparser.
+
+NOTE: fov-01 and fov-02 below say "very rouleaux", which is not one of the four overlap
+levels. Heavy Rouleaux is probably what was meant -- left as written rather than changed.
+
+fov-01: very dense, heavy rouleaux
+fov-02: dense, heavy rouleaux
+fov-03: monolayer
+fov-04: monolayer
+fov-05: monolayer
+fov-06: monolayer, slight rouleaux
+fov-07: monolayer
+fov-08: dense, some rouleaux
+fov-09: monolayer, slight rouleaux
+fov-10: sparser, some rouleaux
+fov-11: monolayer
+fov-12: monolayer
+fov-13: monolayer, slight rouleaux
+fov-14: sparser
+fov-15: sparser
+fov-16: monolayer
+fov-17: monolayer
+fov-18: slightly dense, some rouleaux
+fov-19: monolayer
+fov-20: monolayer
+fov-21: monolayer
+fov-22: very dense, heavy rouleaux
+fov-23: monolayer
+fov-24: monolayer
+fov-25: monolayer
+fov-26: monolayer, slight rouleaux
+fov-27: sparser, slight rouleaux
+fov-28: monolayer
+fov-29: sparser
+fov-30: monolayer
+fov-31: monolayer
+fov-32: sparser
+fov-33: monolayer, slight rouleaux
+fov-34: dense, heavy rouleaux
+fov-35: monolayer
+fov-36: dense, some rouleaux
+fov-37: monolayer
+fov-38: very dense, heavy rouleaux
+fov-39: monolayer
+fov-40: monolayer
+fov-41: monolayer
+fov-42: monolayer
+fov-43: monolayer
+fov-44: monolayer, slight rouleaux
+fov-45: sparser
+fov-46: very dense, heavy rouleaux
+fov-47: dense, some rouleaux
+fov-48: monolayer
+fov-49: monolayer
+fov-50: monolayer

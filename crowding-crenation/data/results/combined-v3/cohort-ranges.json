@@ -1,0 +1,71 @@
+{
+  "generated_from": "data/results/tanzania-complete-081426/fov/crowding/*.csv",
+  "slides_selector": "all",
+  "n_slides": 493,
+  "n_fovs": 159716,
+  "n_rows_dropped_error": 0,
+  "excluded_test_slides": [
+    "KIT-62500735",
+    "KTR-72502961",
+    "NKR-72502165",
+    "RUB-72501769"
+  ],
+  "splits_csv": "data/results/combined-v3/slide-splits.csv",
+  "params_source": "data/results/density-rouleaux-v2/density_overlap_v2.2-optimized_params.json",
+  "params_version": "v2.2-optimized",
+  "lbp_step": 16,
+  "blur_downsample": 4,
+  "percentiles": [
+    2,
+    98
+  ],
+  "feature_names": [
+    "coverage",
+    "otsu_threshold",
+    "otsu_separability",
+    "saturation_score",
+    "lbp_entropy",
+    "glcm_contrast",
+    "edge_density_unmasked",
+    "tile_glcm_cv",
+    "tile_glcm_patchiness"
+  ],
+  "ranges": {
+    "coverage": {
+      "min": 0.031706772961,
+      "max": 0.3759824362100006
+    },
+    "otsu_threshold": {
+      "min": 164.0,
+      "max": 172.0
+    },
+    "otsu_separability": {
+      "min": 0.48830857213,
+      "max": 0.63187382869
+    },
+    "saturation_score": {
+      "min": 0.014846686419000001,
+      "max": 0.1590372157100001
+    },
+    "lbp_entropy": {
+      "min": 2.6865806120999998,
+      "max": 4.0959553497000005
+    },
+    "glcm_contrast": {
+      "min": 13.313476528,
+      "max": 103.72333124000002
+    },
+    "edge_density_unmasked": {
+      "min": 0.025834821427000002,
+      "max": 0.19431343112000013
+    },
+    "tile_glcm_cv": {
+      "min": 0.053162972317,
+      "max": 0.27675523486000037
+    },
+    "tile_glcm_patchiness": {
+      "min": 0.10536985522,
+      "max": 0.7182669216900007
+    }
+  }
+}

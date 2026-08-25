@@ -1,0 +1,12 @@
+slide_id,role,truth,conflict,site,box,region,catalog_split,n_fovs,density_mean,density_std,density_bucket,overlap_mean,quintile,source
+KTR-72502904,train,negative,False,KTR,TZ2025-Box5,"Kagera, Tanzania",,324,0.15733,0.136608,sparser,0.145729,0,new
+KIT-62500909,train,negative,False,KIT,TZ2025-Box1,"Kagera, Tanzania",,324,0.19015,0.184886,sparser,0.208872,1,new
+RUB-72501818,train,positive,True,RUB,TZ2025-Box3,"Kagera, Tanzania",,324,0.259596,0.238141,sparser,0.279931,2,new
+NKR-72502156,train,negative,False,NKR,TZ2025-Box4,"Kagera, Tanzania",,324,0.326367,0.189662,monolayer,0.286367,3,new
+KTR-72502948,train,positive,False,KTR,TZ2025-Box5,"Kagera, Tanzania",,324,0.372442,0.145061,monolayer,0.35022,3,already annotated
+KIT-62500670,train,positive,True,KIT,TZ2025-Box1,"Kagera, Tanzania",,324,0.490885,0.27668,slightly dense,0.461806,4,new
+KTR-72502946,train,negative,False,KTR,TZ2025-Box5,"Kagera, Tanzania",,324,0.491784,0.14592,slightly dense,0.434475,4,already annotated
+KIT-62500735,test,positive,True,KIT,TZ2025-Box1,"Kagera, Tanzania",,324,0.176158,0.080935,sparser,0.146748,1,new
+RUB-72501769,test,negative,False,RUB,TZ2025-Box3,"Kagera, Tanzania",,324,0.27598,0.214958,sparser,0.262139,2,new
+NKR-72502165,test,positive,True,NKR,TZ2025-Box4,"Kagera, Tanzania",,324,0.277804,0.096799,sparser,0.256524,2,new
+KTR-72502961,test,negative,False,KTR,TZ2025-Box5,"Kagera, Tanzania",,324,0.455481,0.090297,slightly dense,0.430312,4,new
