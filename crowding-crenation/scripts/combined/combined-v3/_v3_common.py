@@ -107,24 +107,60 @@ def display_level(label):
     return label.title()
 
 
-def parse_tanzania_tags(tags_str, default_overlap=DEFAULT_OVERLAP_LABEL):
-    """Free-text `tags` -> (density_label, overlap_label).
+# Case-folded tag lookups, built once. The annotation tool's casing is not stable -- the v3
+# label files write `Few cells` / `No cells` where the tables above say `Few Cells` / `No
+# Cells` -- and an exact-match parse silently drops those rungs, which is also why
+# `blind-relabels-annotations.txt` parsed 0/50. `EMPTY_TAG_SYNONYMS` is folded into the density
+# table rather than tested separately: the only key it adds is `Empty`, and the keys it shares
+# with `DENSITY_TAGS` map to identical levels, so the merge removes a special case from the
+# parse loop without changing what any tag means. The assertion is what keeps that true.
+_DENSITY_TAG_TABLE = {**DENSITY_TAGS, **EMPTY_TAG_SYNONYMS}
+assert all(DENSITY_TAGS[k] == v for k, v in EMPTY_TAG_SYNONYMS.items() if k in DENSITY_TAGS), \
+    "EMPTY_TAG_SYNONYMS disagrees with DENSITY_TAGS on a shared key"
 
-    Same contract as `_v2_common.parse_tanzania_tags` -- a missing density tag raises, because
-    in this dataset that is a data bug rather than a default -- extended with the two new
-    density tags and the `Empty` synonym. Quality tags are ignored here; `parse_quality_tags`
-    returns them separately for callers that want them.
+_DENSITY_LOOKUP = {k.casefold(): v for k, v in _DENSITY_TAG_TABLE.items()}
+_OVERLAP_LOOKUP = {k.casefold(): v for k, v in OVERLAP_TAGS.items()}
+_QUALITY_LOOKUP = {k.casefold(): k for k in QUALITY_TAGS}
+
+
+def _tag_parts(tags_str):
+    """The written tags, stripped, case-folded, empties dropped."""
+    return [p.strip().casefold() for p in tags_str.split(",") if p.strip()]
+
+
+def _resolve_axis(parts, lookup, levels):
+    """-> (most_severe_level, had_multiple) for one axis; (None, False) if the axis is absent.
+
+    Severity is position in `levels`. This replaces v2's last-tag-wins loop, which resolved by
+    *write order* and so returned whichever of two tags the annotator happened to type second
+    -- yielding `sparser` for "Sparser, Few cells" and the milder `some rouleaux` for
+    "Dense, Rouleaux, Some Rouleaux", both silently.
+
+    `had_multiple` is the double-label encoding: two rungs on one axis mean the more severe one,
+    at its low end. Keyed on distinct levels rather than tag count, so a repeated tag is not
+    read as a hedge.
     """
-    parts = [p.strip() for p in tags_str.split(",") if p.strip()]
-    density_label = None
-    overlap_label = None
-    for part in parts:
-        if part in EMPTY_TAG_SYNONYMS:
-            density_label = EMPTY_TAG_SYNONYMS[part]
-        elif part in DENSITY_TAGS:
-            density_label = DENSITY_TAGS[part]
-        elif part in OVERLAP_TAGS:
-            overlap_label = OVERLAP_TAGS[part]
+    found = [lookup[p] for p in parts if p in lookup]
+    if not found:
+        return None, False
+    return max(found, key=levels.index), len(set(found)) > 1
+
+
+def parse_tanzania_tags_v3(tags_str, default_overlap=DEFAULT_OVERLAP_LABEL):
+    """Free-text `tags` -> (density, density_sub_low, overlap, overlap_sub_low).
+
+    Keeps both of the raises it inherited: a missing density tag is a data bug rather than a
+    default, and a field with no cells has no packing to describe. The first one is the only
+    thing that caught `NKR-72502156` fov 284, so it stays a raise rather than becoming a
+    default.
+
+    Both `*_sub_low` flags are False for every one of the 648 legacy rows -- they contain no
+    double labels -- which is what makes this a strict extension of the v2 parser rather than a
+    reinterpretation of the existing pool. `verify_v3_labels.py` asserts exactly that.
+    """
+    parts = _tag_parts(tags_str)
+    density_label, density_sub_low = _resolve_axis(parts, _DENSITY_LOOKUP, DENSITY_LEVELS)
+    overlap_label, overlap_sub_low = _resolve_axis(parts, _OVERLAP_LOOKUP, OVERLAP_LEVELS)
 
     if density_label is None:
         raise ValueError(f"no density tag in {tags_str!r}; expected one of "
@@ -134,15 +170,49 @@ def parse_tanzania_tags(tags_str, default_overlap=DEFAULT_OVERLAP_LABEL):
         if overlap_label is not None and overlap_label != DEFAULT_OVERLAP_LABEL:
             raise ValueError(f"{density_label!r} cannot carry the overlap tag "
                              f"{overlap_label!r}: {tags_str!r}")
-        return density_label, DEFAULT_OVERLAP_LABEL
+        return density_label, density_sub_low, DEFAULT_OVERLAP_LABEL, False
 
-    return density_label, (default_overlap if overlap_label is None else overlap_label)
+    if overlap_label is None:
+        return density_label, density_sub_low, default_overlap, False
+    return density_label, density_sub_low, overlap_label, overlap_sub_low
+
+
+def parse_tanzania_tags(tags_str, default_overlap=DEFAULT_OVERLAP_LABEL):
+    """The 2-tuple contract, unchanged, so existing callers do not have to move."""
+    density_label, _, overlap_label, _ = parse_tanzania_tags_v3(tags_str, default_overlap)
+    return density_label, overlap_label
+
+
+def has_quality_only(tags_str):
+    """True for a row naming no density and no overlap level but at least one quality tag.
+
+    The 23 `Overexposed`-only rows were labelled for a future overexposure study, not for
+    crowding, so the merge skips exactly these. Every other row with no density tag still
+    raises, which is what stops a genuine omission from hiding behind this predicate.
+    """
+    parts = _tag_parts(tags_str)
+    if any(p in _DENSITY_LOOKUP or p in _OVERLAP_LOOKUP for p in parts):
+        return False
+    return any(p in _QUALITY_LOOKUP for p in parts)
+
+
+def ordinal_target(ordinal, sub_low, delta):
+    """The fitting target for one row: `delta` below its rung when the label was hedged low.
+
+    The single place the double-label encoding enters the numerics, so `--sub-delta 0` recovers
+    the un-nudged model exactly and the ablation is one loop rather than a branch in the fit.
+    """
+    return float(ordinal) - delta if sub_low else float(ordinal)
 
 
 def parse_quality_tags(tags_str):
-    """The non-density, non-overlap tags, in the order written. Recorded, never fitted."""
-    return [p.strip() for p in tags_str.split(",")
-            if p.strip() in QUALITY_TAGS]
+    """The canonical spellings of the quality tags named, in the order written.
+
+    Recorded, never fitted. Case-insensitive for the same reason the axis lookups are, and it
+    returns the canonical casing so that downstream counts group instead of splitting on how
+    the tag happened to be typed.
+    """
+    return [_QUALITY_LOOKUP[p] for p in _tag_parts(tags_str) if p in _QUALITY_LOOKUP]
 
 
 def collapse_to_v2_density(label):

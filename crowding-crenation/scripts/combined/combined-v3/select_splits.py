@@ -3,7 +3,7 @@
 Two different objectives, deliberately not the same one:
 
   **Test is selected for distributional match.** Its job is an unbiased estimate of deployment
-  performance, so the three slides are chosen to minimise the KS distance between their pooled
+  performance, so the four slides are chosen to minimise the KS distance between their pooled
   per-FOV density CDF and the whole cohort's. Getting this wrong is what produced v2.2's central
   defect -- its two calibration slides sit at the 77th and 93rd percentile of the cohort they
   score, so the fit is centred on the wrong part of the distribution.
@@ -21,7 +21,13 @@ Constraints both slates carry, and why:
     both classes.
   * **Site.** Site is the strongest structural variable (RUB median 0.187 vs NKR 0.379 among
     negatives) and it is confounded with truth -- negatives are NKR-heavy, positives KIT-heavy.
-    Train covers all four sites; test covers at least three.
+    **Both slates cover all four sites.** Test did not, until 2026-08-24: it was 3 slides under a
+    >=3-site rule, which left KIT untested even though KIT is the largest site among positives
+    (104 of 271) and train holds two KIT slides. Going to 4 test slides, one per site, *improves*
+    the KS to 0.0138 from 0.0173 -- a 4-slide slate has more freedom to match the cohort CDF than
+    a 3-slide one, and that slack more than absorbs the extra constraint. Forcing KIT into a
+    3-slide slate would instead have cost 12.7% relative KS (0.0195). Pass `--no-test-all-sites`
+    to reproduce the old rule.
   * **Box.** Boxes are scanning batches. Both slates spread across them so a batch effect cannot
     masquerade as a density effect.
   * **No catalog `test` slide enters v3 train.** The workbook's split is a parasite-annotation
@@ -31,11 +37,16 @@ Constraints both slates carry, and why:
 Already-labelled slides are fixed into train rather than re-selected: KTR-72502948 (positive) and
 KTR-72502946 (negative) carry 646 annotated FOVs between them, which is half the v3 label pool.
 
+Train slides are **pinned** by default from the existing roster (`--pin-train`). The five new
+train slides are annotated, so they are data now rather than a search result -- re-deriving them
+after the test pool changed could silently pick different slides and orphan 412 labelled FOVs.
+
 Writes `slide-splits.csv` -- the committed roster every later v3 step filters on.
 
 Usage:
     python scripts/combined/combined-v3/select_splits.py
-    python scripts/combined/combined-v3/select_splits.py --n-test 3 --n-train 5
+    python scripts/combined/combined-v3/select_splits.py --no-test-all-sites --n-test 3
+    python scripts/combined/combined-v3/select_splits.py --pin-train ''   # re-search train too
 """
 import argparse
 import csv
@@ -62,6 +73,8 @@ PRE_LABELLED = {"KTR-72502948": "positive", "KTR-72502946": "negative"}
 # One labelled FOV each, from four different slides. Dropped from the v3 pool: they add no slide
 # group, and KIT-62501048 is a catalog `test` slide. KIT-62500652 is additionally a negative.
 SINGLETON_LABELLED = {"KIT-62501048", "KIT-62500652", "KIT-62501056", "KIT-62500666"}
+
+SITES = ("KIT", "KTR", "NKR", "RUB")
 
 GRID = np.linspace(0.0, 1.0, 201)
 MIN_FOVS = 300
@@ -141,6 +154,75 @@ def select_test(meta, scores, eligible, n_test, n_pos, target_cdf):
     return best, best_ks
 
 
+def select_test_all_sites(meta, scores, eligible, n_pos, target_cdf, sites=SITES,
+                          require_distinct_boxes=True):
+    """One slide per site -- the only way `len(sites)` slides can cover `len(sites)` sites.
+
+    Brute force is not an option here: 100 KIT-positive x 28 KTR-positive x 78 NKR-negative x 58
+    RUB-negative is 12.7M slates for one truth pattern and 73M across all six, times a 201-point
+    grid. But KS depends on the slate only through the pooled histogram and the pooled FOV count,
+    and both are plain sums over the four slides. So the search factorises: enumerate
+    (site0, site1) pairs and (site2, site3) pairs separately, then every full slate is one pair
+    from each. That is ~4k iterations over a ~7k x 201 array instead of 73M x 201.
+
+    `require_distinct_boxes` asks for one box per slide as well as one site per slide. Boxes are
+    scanning batches, so spreading across them stops a batch effect from masquerading as a
+    density effect. Measured, it costs nothing: the constrained and unconstrained optima are the
+    same slate.
+    """
+    all_boxes = sorted({meta[s]["box"] for s in eligible})
+    box_bit = {b: 1 << i for i, b in enumerate(all_boxes)}
+    site_of = {s: s.split("-")[0] for s in eligible}
+    pool = {st: {t: sorted(s for s in eligible
+                           if site_of[s] == st and meta[s]["truth"] == t)
+                 for t in ("positive", "negative")} for st in sites}
+
+    def pairs(slides_a, slides_b):
+        H, N, M, L = [], [], [], []
+        for a in slides_a:
+            for b in slides_b:
+                ma, mb = box_bit[meta[a]["box"]], box_bit[meta[b]["box"]]
+                if require_distinct_boxes and ma == mb:
+                    continue
+                H.append(hist_counts(scores[a]) + hist_counts(scores[b]))
+                N.append(float(len(scores[a]) + len(scores[b])))
+                M.append(ma | mb)
+                L.append((a, b))
+        return (np.asarray(H, dtype=np.float64), np.asarray(N, dtype=np.float64),
+                np.asarray(M, dtype=np.int64), L)
+
+    best_ks, best = np.inf, None
+    n_considered = 0
+    for pos_sites in itertools.combinations(sites, n_pos):
+        truth = {st: ("positive" if st in pos_sites else "negative") for st in sites}
+        left = pairs(pool[sites[0]][truth[sites[0]]], pool[sites[1]][truth[sites[1]]])
+        right = pairs(pool[sites[2]][truth[sites[2]]], pool[sites[3]][truth[sites[3]]])
+        if not len(left[0]) or not len(right[0]):
+            continue
+        # Iterate the smaller block so the vectorised side is the larger one.
+        if len(left[0]) > len(right[0]):
+            left, right = right, left
+        Hl, Nl, Ml, Ll = left
+        Hr, Nr, Mr, Lr = right
+        for i in range(len(Hl)):
+            ok = (Mr & Ml[i]) == 0 if require_distinct_boxes else np.ones(len(Mr), bool)
+            if not ok.any():
+                continue
+            n_considered += int(ok.sum())
+            S, T = Hl[i] + Hr[ok], Nl[i] + Nr[ok]
+            ks = np.abs(S / T[:, None] - target_cdf).max(axis=1)
+            j = int(ks.argmin())
+            if ks[j] < best_ks:
+                best_ks = float(ks[j])
+                best = list(Ll[i]) + list(Lr[int(np.flatnonzero(ok)[j])])
+    if best is None:
+        raise SystemExit("no all-sites test slate satisfies the constraints")
+    print(f"  test search: {n_considered:,} candidate slates "
+          f"({n_pos} positive + {len(sites) - n_pos} negative, one slide per site"
+          f"{', distinct boxes' if require_distinct_boxes else ''})")
+    return best, best_ks
+
+
 def select_train(meta, scores, eligible, n_train, edges):
     """One slide per cohort density quintile, maximising total within-slide spread, subject to
     covering all four sites, >=4 boxes, and >=2 of each truth class."""
@@ -177,9 +259,18 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--n-train", type=int, default=5, help="new slides for train/val")
-    parser.add_argument("--n-test", type=int, default=3, help="new slides for test")
+    parser.add_argument("--n-test", type=int, default=4, help="new slides for test")
     parser.add_argument("--test-positives", type=int, default=2,
                         help="how many of the test slides are positive (cohort is 55:45)")
+    parser.add_argument("--test-all-sites", action="store_true", default=True,
+                        help="require one test slide per site; needs --n-test == 4")
+    parser.add_argument("--no-test-all-sites", dest="test_all_sites", action="store_false",
+                        help="fall back to the >=3-sites constraint (the pre-2026-08-24 rule)")
+    parser.add_argument("--pin-train", default=str(SPLITS_CSV),
+                        help="reuse the train slides from this roster instead of re-selecting "
+                             "them. The five new train slides are annotated, so they are data "
+                             "now, not a search result -- re-deriving them could silently pick "
+                             "different slides when the test pool changes. Pass '' to re-search.")
     parser.add_argument("--summary", default=str(SUMMARY_CSV))
     parser.add_argument("--fov-dir", default=str(CROWDING_FOV_DIR))
     args = parser.parse_args()
@@ -199,14 +290,36 @@ def main():
           f"({sum(1 for s in eligible if meta[s]['truth'] == 'positive')} pos / "
           f"{sum(1 for s in eligible if meta[s]['truth'] == 'negative')} neg)")
 
-    test, ks = select_test(meta, scores, eligible, args.n_test, args.test_positives, target_cdf)
+    pinned = []
+    if args.pin_train and Path(args.pin_train).exists():
+        pinned = [r["slide_id"] for r in read_csv_dicts(args.pin_train)
+                  if r["role"] == "train" and r["slide_id"] not in PRE_LABELLED]
+        print(f"pinned train slides from {Path(args.pin_train).name}: {pinned}")
+
+    # Pinned train slides must not be candidates for test -- they are already annotated.
+    eligible -= set(pinned)
+
+    if args.test_all_sites:
+        if args.n_test != len(SITES):
+            raise SystemExit(f"--test-all-sites needs --n-test {len(SITES)}, got {args.n_test}")
+        test, ks = select_test_all_sites(meta, scores, eligible, args.test_positives, target_cdf)
+    else:
+        test, ks = select_test(meta, scores, eligible, args.n_test, args.test_positives,
+                               target_cdf)
     print(f"  -> KS {ks:.4f}")
 
-    train_pool = eligible - set(test) - catalog_test
     edges = np.quantile([float(m["density_mean"]) for m in meta.values()],
                         np.linspace(0, 1, args.n_train + 1))
-    train, spread = select_train(meta, scores, train_pool, args.n_train, edges)
-    print(f"  train search: total within-slide std {spread:.3f}")
+    if pinned:
+        train, spread = pinned, sum(float(meta[s]["density_std"] or 0.0) for s in pinned)
+        print(f"  train pinned: total within-slide std {spread:.3f}")
+    else:
+        train_pool = eligible - set(test) - catalog_test
+        train, spread = select_train(meta, scores, train_pool, args.n_train, edges)
+        print(f"  train search: total within-slide std {spread:.3f}")
+    overlap = sorted(set(train) & set(test))
+    if overlap:
+        raise SystemExit(f"train and test overlap: {overlap}")
 
     rows = []
     for slide_id, source in ([(s, "already annotated") for s in PRE_LABELLED]

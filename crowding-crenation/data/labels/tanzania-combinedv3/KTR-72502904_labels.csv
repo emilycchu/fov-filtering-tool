@@ -1,0 +1,85 @@
+sample_id,fov_id,annotator,country,tags
+KTR-72502904,1,E. Chu,Tanzania,Monolayer
+KTR-72502904,4,E. Chu,Tanzania,Monolayer
+KTR-72502904,8,E. Chu,Tanzania,Monolayer
+KTR-72502904,12,E. Chu,Tanzania,Monolayer
+KTR-72502904,16,E. Chu,Tanzania,Monolayer
+KTR-72502904,19,E. Chu,Tanzania,Overexposed
+KTR-72502904,20,E. Chu,Tanzania,Monolayer
+KTR-72502904,24,E. Chu,Tanzania,Monolayer
+KTR-72502904,28,E. Chu,Tanzania,Monolayer
+KTR-72502904,32,E. Chu,Tanzania,Monolayer
+KTR-72502904,36,E. Chu,Tanzania,Monolayer
+KTR-72502904,40,E. Chu,Tanzania,Monolayer
+KTR-72502904,44,E. Chu,Tanzania,"Monolayer, Slight Rouleaux"
+KTR-72502904,48,E. Chu,Tanzania,Monolayer
+KTR-72502904,52,E. Chu,Tanzania,Monolayer
+KTR-72502904,56,E. Chu,Tanzania,"Sparser, Monolayer"
+KTR-72502904,60,E. Chu,Tanzania,Sparser
+KTR-72502904,64,E. Chu,Tanzania,"Sparser, Monolayer"
+KTR-72502904,68,E. Chu,Tanzania,Sparser
+KTR-72502904,72,E. Chu,Tanzania,Sparser
+KTR-72502904,76,E. Chu,Tanzania,"Sparser, Few cells"
+KTR-72502904,80,E. Chu,Tanzania,Sparser
+KTR-72502904,84,E. Chu,Tanzania,Sparser
+KTR-72502904,88,E. Chu,Tanzania,"Sparser, Monolayer"
+KTR-72502904,92,E. Chu,Tanzania,Sparser
+KTR-72502904,96,E. Chu,Tanzania,Sparser
+KTR-72502904,100,E. Chu,Tanzania,Sparser
+KTR-72502904,104,E. Chu,Tanzania,Sparser
+KTR-72502904,108,E. Chu,Tanzania,Sparser
+KTR-72502904,112,E. Chu,Tanzania,"Sparser, Few cells"
+KTR-72502904,116,E. Chu,Tanzania,Sparser
+KTR-72502904,120,E. Chu,Tanzania,Sparser
+KTR-72502904,124,E. Chu,Tanzania,Sparser
+KTR-72502904,128,E. Chu,Tanzania,Sparser
+KTR-72502904,132,E. Chu,Tanzania,Sparser
+KTR-72502904,136,E. Chu,Tanzania,Sparser
+KTR-72502904,140,E. Chu,Tanzania,Sparser
+KTR-72502904,144,E. Chu,Tanzania,Sparser
+KTR-72502904,148,E. Chu,Tanzania,Sparser
+KTR-72502904,152,E. Chu,Tanzania,"Sparser, Monolayer"
+KTR-72502904,156,E. Chu,Tanzania,"Monolayer, Sparser"
+KTR-72502904,160,E. Chu,Tanzania,"Sparser, Monolayer"
+KTR-72502904,164,E. Chu,Tanzania,Sparser
+KTR-72502904,168,E. Chu,Tanzania,Sparser
+KTR-72502904,172,E. Chu,Tanzania,"Sparser, Few cells"
+KTR-72502904,176,E. Chu,Tanzania,"Sparser, Few cells"
+KTR-72502904,180,E. Chu,Tanzania,Sparser
+KTR-72502904,184,E. Chu,Tanzania,"Sparser, Few cells"
+KTR-72502904,188,E. Chu,Tanzania,"Few cells, Sparser"
+KTR-72502904,192,E. Chu,Tanzania,"Few cells, Sparser"
+KTR-72502904,196,E. Chu,Tanzania,Few cells
+KTR-72502904,200,E. Chu,Tanzania,Few cells
+KTR-72502904,204,E. Chu,Tanzania,Few cells
+KTR-72502904,208,E. Chu,Tanzania,Few cells
+KTR-72502904,212,E. Chu,Tanzania,Few cells
+KTR-72502904,216,E. Chu,Tanzania,Few cells
+KTR-72502904,220,E. Chu,Tanzania,"Sparser, Few cells"
+KTR-72502904,224,E. Chu,Tanzania,"Sparser, Few cells"
+KTR-72502904,228,E. Chu,Tanzania,Sparser
+KTR-72502904,232,E. Chu,Tanzania,Sparser
+KTR-72502904,236,E. Chu,Tanzania,"Monolayer, Sparser, Slight Rouleaux"
+KTR-72502904,240,E. Chu,Tanzania,"Monolayer, Slight Rouleaux"
+KTR-72502904,244,E. Chu,Tanzania,"Sparser, Monolayer"
+KTR-72502904,248,E. Chu,Tanzania,"Monolayer, Sparser"
+KTR-72502904,252,E. Chu,Tanzania,"Sparser, Monolayer, Slight Rouleaux"
+KTR-72502904,256,E. Chu,Tanzania,Monolayer
+KTR-72502904,260,E. Chu,Tanzania,Monolayer
+KTR-72502904,264,E. Chu,Tanzania,Monolayer
+KTR-72502904,268,E. Chu,Tanzania,Monolayer
+KTR-72502904,272,E. Chu,Tanzania,Monolayer
+KTR-72502904,276,E. Chu,Tanzania,Monolayer
+KTR-72502904,280,E. Chu,Tanzania,Monolayer
+KTR-72502904,284,E. Chu,Tanzania,Monolayer
+KTR-72502904,288,E. Chu,Tanzania,Monolayer
+KTR-72502904,292,E. Chu,Tanzania,"Monolayer, Sparser"
+KTR-72502904,296,E. Chu,Tanzania,Monolayer
+KTR-72502904,300,E. Chu,Tanzania,Monolayer
+KTR-72502904,304,E. Chu,Tanzania,Monolayer
+KTR-72502904,308,E. Chu,Tanzania,"Monolayer, Sparser"
+KTR-72502904,312,E. Chu,Tanzania,Monolayer
+KTR-72502904,315,E. Chu,Tanzania,Overexposed
+KTR-72502904,316,E. Chu,Tanzania,Monolayer
+KTR-72502904,320,E. Chu,Tanzania,Monolayer
+KTR-72502904,324,E. Chu,Tanzania,Monolayer

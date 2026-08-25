@@ -1,0 +1,188 @@
+{
+  "version": "v3",
+  "generated_from": "scripts/combined/combined-v3/calibrate_v3.py",
+  "n_fovs": 1060,
+  "train_slides": [
+    "KIT-62500670",
+    "KIT-62500909",
+    "KTR-72502904",
+    "KTR-72502946",
+    "KTR-72502948",
+    "NKR-72502156",
+    "RUB-72501818"
+  ],
+  "alpha": 10.0,
+  "sample_weights": "slide",
+  "sub_delta": 0.0,
+  "pava_include_no_cells": false,
+  "non_fitting_density_levels": [
+    "no cells"
+  ],
+  "lbp_step": 16,
+  "blur_downsample": 4,
+  "ranges_source": "data/results/tanzania-complete-081426/fov/crowding/*.csv",
+  "ranges_n_fovs": 159716,
+  "ranges_n_slides": 493,
+  "ranges_selector": "all",
+  "ranges_scope": "fold",
+  "density": {
+    "feature_names": [
+      "coverage",
+      "otsu_separability",
+      "saturation_score",
+      "lbp_entropy",
+      "glcm_contrast",
+      "edge_density_unmasked",
+      "tile_glcm_cv",
+      "tile_glcm_patchiness"
+    ],
+    "weights": {
+      "coverage": 0.15223251747586256,
+      "otsu_separability": 0.12476036337195004,
+      "saturation_score": 0.14764905345133109,
+      "lbp_entropy": 0.17434749234954586,
+      "glcm_contrast": 0.16759301654804104,
+      "edge_density_unmasked": 0.18769871983356845,
+      "tile_glcm_cv": 0.02953015873995951,
+      "tile_glcm_patchiness": 0.016188678229741505
+    },
+    "normalization": {
+      "coverage": {
+        "min": 0.031706772961,
+        "max": 0.3759824362100006
+      },
+      "otsu_separability": {
+        "min": 0.48830857213,
+        "max": 0.63187382869
+      },
+      "saturation_score": {
+        "min": 0.014846686419000001,
+        "max": 0.1590372157100001
+      },
+      "lbp_entropy": {
+        "min": 2.6865806120999998,
+        "max": 4.0959553497000005
+      },
+      "glcm_contrast": {
+        "min": 13.313476528,
+        "max": 103.72333124000002
+      },
+      "edge_density_unmasked": {
+        "min": 0.025834821427000002,
+        "max": 0.19431343112000013
+      },
+      "tile_glcm_cv": {
+        "min": 0.053162972317,
+        "max": 0.27675523486000037
+      },
+      "tile_glcm_patchiness": {
+        "min": 0.10536985522,
+        "max": 0.7182669216900007
+      }
+    },
+    "bucket_thresholds": [
+      0.008389183936638626,
+      0.10641353948956375,
+      0.34171477992495614,
+      0.6282634929536809,
+      0.8032990059005956,
+      0.8438508082573789
+    ],
+    "bucket_labels": [
+      "no cells",
+      "few cells",
+      "sparser",
+      "monolayer",
+      "slightly dense",
+      "dense",
+      "very dense"
+    ],
+    "pava_merged_groups": [],
+    "dropped_negative_coefficient": [],
+    "n_fit_rows": 1047
+  },
+  "overlap": {
+    "feature_names": [
+      "coverage",
+      "otsu_separability",
+      "saturation_score",
+      "lbp_entropy",
+      "glcm_contrast",
+      "edge_density_unmasked",
+      "tile_glcm_cv",
+      "tile_glcm_patchiness"
+    ],
+    "weights": {
+      "coverage": 0.1501439388505284,
+      "otsu_separability": 0.08638922267794259,
+      "saturation_score": 0.14643315519987912,
+      "lbp_entropy": 0.13601440651289232,
+      "glcm_contrast": 0.15980784793781558,
+      "edge_density_unmasked": 0.16423831564812844,
+      "tile_glcm_cv": 0.07084718683772508,
+      "tile_glcm_patchiness": 0.08612592633508849
+    },
+    "normalization": {
+      "coverage": {
+        "min": 0.031706772961,
+        "max": 0.3759824362100006
+      },
+      "otsu_separability": {
+        "min": 0.48830857213,
+        "max": 0.63187382869
+      },
+      "saturation_score": {
+        "min": 0.014846686419000001,
+        "max": 0.1590372157100001
+      },
+      "lbp_entropy": {
+        "min": 2.6865806120999998,
+        "max": 4.0959553497000005
+      },
+      "glcm_contrast": {
+        "min": 13.313476528,
+        "max": 103.72333124000002
+      },
+      "edge_density_unmasked": {
+        "min": 0.025834821427000002,
+        "max": 0.19431343112000013
+      },
+      "tile_glcm_cv": {
+        "min": 0.053162972317,
+        "max": 0.27675523486000037
+      },
+      "tile_glcm_patchiness": {
+        "min": 0.10536985522,
+        "max": 0.7182669216900007
+      }
+    },
+    "bucket_thresholds": [
+      0.5322496893176563,
+      0.7196484601881464,
+      0.7631465021508281,
+      0.7923638168848373
+    ],
+    "bucket_labels": [
+      "no rouleaux",
+      "slight rouleaux",
+      "some rouleaux",
+      "rouleaux",
+      "heavy rouleaux"
+    ],
+    "pava_merged_groups": [
+      [
+        2,
+        3
+      ]
+    ],
+    "dropped_negative_coefficient": [],
+    "n_fit_rows": 1047
+  },
+  "saturation_override": {
+    "enabled": false
+  },
+  "empty_field_override": {
+    "enabled": false,
+    "replaced_by": "density bucket_labels[0:2]"
+  }
+}

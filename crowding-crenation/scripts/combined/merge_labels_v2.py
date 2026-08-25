@@ -66,46 +66,62 @@ def load_initial_dataset(csv_path, image_dir):
     return rows
 
 
-def load_tanzania_dataset(csv_path, image_dir, name_template):
-    rows = []
-    for r in read_csv_dicts(csv_path):
-        fov_id = int(r["fov_id"])
-        filename = name_template.format(fov_id=fov_id)
-        image_path = image_dir / filename
-        if not image_path.exists():
-            raise FileNotFoundError(f"tanzania dataset: missing image for fov_id={fov_id}: {image_path}")
-
-        density_label, overlap_label = parse_tanzania_tags(r["tags"])
-
-        rows.append({
-            "fov_key": f"tanzania-073026/{filename}",
-            "dataset": "tanzania-073026",
-            "filename": filename,
-            "image_path": str(image_path),
-            "density_label": density_label,
-            "overlap_label": overlap_label,
-            "density_ord": density_ordinal(density_label),
-            "overlap_ord": overlap_ordinal(overlap_label),
-        })
-    return rows
+# The two legacy Tanzania sources, declared once. They differ in exactly one respect -- 073026's
+# images were downloaded and 080526's are streamed from GCS -- so the key, dataset and filename
+# construction is shared and `image_path` is the only field that branches.
+TANZANIA_LEGACY_SOURCES = {
+    "tanzania-073026": {
+        "labels_csv": TANZANIA_LABELS_CSV,
+        "name_template": TANZANIA_IMAGE_NAME,
+        "image_dir": TANZANIA_IMAGE_DIR,
+        "gcs": None,
+    },
+    "tanzania-080526": {
+        "labels_csv": TANZANIA_080526_LABELS_CSV,
+        "name_template": TANZANIA_080526_IMAGE_NAME,
+        "image_dir": None,
+        "gcs": (TANZANIA_080526_BUCKET, TANZANIA_080526_BLOB_PREFIX),
+    },
+}
 
 
-def load_tanzania_gcs_dataset(csv_path, bucket, blob_prefix, name_template, dataset_label):
-    """Same as load_tanzania_dataset, but for a dataset whose images live only in GCS (never
-    downloaded locally) -- image_path is a gs:// URI instead of a local Path, and there's no
-    local existence check (trusting the caller already confirmed the blobs exist).
+def tanzania_row_paths(source, fov_id):
+    """-> (fov_key, dataset, filename, image_path) for one legacy Tanzania FOV.
+
+    Shared with `combined-v3/merge_labels_v3.py` so that "v3 reproduces v2's legacy rows
+    exactly" is a structural property rather than two copies of the same string formatting
+    happening to agree. `fov_key` is the join key between the two merged files, so it is the
+    one string that must not drift.
+
+    For 073026 the images were downloaded, so `image_path` is a local path and its existence is
+    checked here -- a missing image is a broken merge, not a row to skip. For 080526 they live
+    only in GCS, so `image_path` is a gs:// URI and there is no existence check, trusting the
+    caller already confirmed the blobs exist.
     """
-    rows = []
-    for r in read_csv_dicts(csv_path):
-        fov_id = int(r["fov_id"])
-        filename = name_template.format(fov_id=fov_id)
-        density_label, overlap_label = parse_tanzania_tags(r["tags"])
+    spec = TANZANIA_LEGACY_SOURCES[source]
+    filename = spec["name_template"].format(fov_id=fov_id)
+    if spec["gcs"] is None:
+        local = spec["image_dir"] / filename
+        if not local.exists():
+            raise FileNotFoundError(f"{source}: missing image for fov_id={fov_id}: {local}")
+        image_path = str(local)
+    else:
+        bucket, blob_prefix = spec["gcs"]
+        image_path = f"gs://{bucket}/{blob_prefix}/{filename}"
+    return f"{source}/{filename}", source, filename, image_path
 
+
+def load_tanzania_legacy(source):
+    """One legacy Tanzania slide's labelled FOVs, in file order."""
+    rows = []
+    for r in read_csv_dicts(TANZANIA_LEGACY_SOURCES[source]["labels_csv"]):
+        fov_key, dataset, filename, image_path = tanzania_row_paths(source, int(r["fov_id"]))
+        density_label, overlap_label = parse_tanzania_tags(r["tags"])
         rows.append({
-            "fov_key": f"{dataset_label}/{filename}",
-            "dataset": dataset_label,
+            "fov_key": fov_key,
+            "dataset": dataset,
             "filename": filename,
-            "image_path": f"gs://{bucket}/{blob_prefix}/{filename}",
+            "image_path": image_path,
             "density_label": density_label,
             "overlap_label": overlap_label,
             "density_ord": density_ordinal(density_label),
@@ -135,11 +151,8 @@ def main():
     args = parser.parse_args()
 
     initial_rows = load_initial_dataset(INITIAL_LABELS_CSV, INITIAL_IMAGE_DIR)
-    tanzania_rows = load_tanzania_dataset(TANZANIA_LABELS_CSV, TANZANIA_IMAGE_DIR, TANZANIA_IMAGE_NAME)
-    tanzania_080526_rows = load_tanzania_gcs_dataset(
-        TANZANIA_080526_LABELS_CSV, TANZANIA_080526_BUCKET, TANZANIA_080526_BLOB_PREFIX,
-        TANZANIA_080526_IMAGE_NAME, "tanzania-080526",
-    )
+    tanzania_rows = load_tanzania_legacy("tanzania-073026")
+    tanzania_080526_rows = load_tanzania_legacy("tanzania-080526")
     rows = merge_datasets(initial_rows, tanzania_rows, tanzania_080526_rows)
 
     write_csv_dicts(args.out, FIELDNAMES, rows)

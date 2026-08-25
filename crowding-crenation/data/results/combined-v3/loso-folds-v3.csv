@@ -1,0 +1,15 @@
+axis,held_out_slide,n,n_levels_present,exact,off_by_one,balanced_accuracy,macro_f1,qwk,majority_baseline,n_features_kept,features_kept,dropped,merged_groups
+density,KIT-62500670,83,7,0.265060,0.650602,0.339698,0.237625,0.750020,0.385542,8,coverage;otsu_separability;saturation_score;lbp_entropy;glcm_contrast;edge_density_unmasked;tile_glcm_cv;tile_glcm_patchiness,,
+density,KIT-62500909,82,3,0.621951,1.000000,0.608059,0.619311,0.718494,0.512195,8,coverage;otsu_separability;saturation_score;lbp_entropy;glcm_contrast;edge_density_unmasked;tile_glcm_cv;tile_glcm_patchiness,,
+density,KTR-72502904,82,3,0.682927,1.000000,0.488137,0.518038,0.750643,0.524390,8,coverage;otsu_separability;saturation_score;lbp_entropy;glcm_contrast;edge_density_unmasked;tile_glcm_cv;tile_glcm_patchiness,,
+density,KTR-72502946,324,5,0.577160,0.966049,0.451373,0.442994,0.716410,0.524691,8,coverage;otsu_separability;saturation_score;lbp_entropy;glcm_contrast;edge_density_unmasked;tile_glcm_cv;tile_glcm_patchiness,,5+6
+density,KTR-72502948,324,5,0.725309,0.959877,0.424781,0.384298,0.605809,0.706790,8,coverage;otsu_separability;saturation_score;lbp_entropy;glcm_contrast;edge_density_unmasked;tile_glcm_cv;tile_glcm_patchiness,,
+density,NKR-72502156,83,5,0.831325,0.975904,0.741667,0.607757,0.871656,0.710843,8,coverage;otsu_separability;saturation_score;lbp_entropy;glcm_contrast;edge_density_unmasked;tile_glcm_cv;tile_glcm_patchiness,,
+density,RUB-72501818,82,2,0.487805,1.000000,0.552443,0.497475,0.164078,0.707317,8,coverage;otsu_separability;saturation_score;lbp_entropy;glcm_contrast;edge_density_unmasked;tile_glcm_cv;tile_glcm_patchiness,,
+overlap,KIT-62500670,83,5,0.337349,0.542169,0.349440,0.270384,0.363919,0.337349,8,coverage;otsu_separability;saturation_score;lbp_entropy;glcm_contrast;edge_density_unmasked;tile_glcm_cv;tile_glcm_patchiness,,
+overlap,KIT-62500909,82,1,0.939024,1.000000,0.939024,0.968553,0.000000,1.000000,8,coverage;otsu_separability;saturation_score;lbp_entropy;glcm_contrast;edge_density_unmasked;tile_glcm_cv;tile_glcm_patchiness,,2+3
+overlap,KTR-72502904,82,2,0.951220,1.000000,0.500000,0.487500,0.000000,0.951220,8,coverage;otsu_separability;saturation_score;lbp_entropy;glcm_contrast;edge_density_unmasked;tile_glcm_cv;tile_glcm_patchiness,,2+3
+overlap,KTR-72502946,324,5,0.314815,0.916667,0.386405,0.306099,0.713373,0.549383,8,coverage;otsu_separability;saturation_score;lbp_entropy;glcm_contrast;edge_density_unmasked;tile_glcm_cv;tile_glcm_patchiness,,2+3
+overlap,KTR-72502948,324,5,0.598765,0.944444,0.298535,0.288130,0.540455,0.743827,8,coverage;otsu_separability;saturation_score;lbp_entropy;glcm_contrast;edge_density_unmasked;tile_glcm_cv;tile_glcm_patchiness,,2+3
+overlap,NKR-72502156,83,5,0.734940,0.939759,0.512205,0.385867,0.846661,0.650602,8,coverage;otsu_separability;saturation_score;lbp_entropy;glcm_contrast;edge_density_unmasked;tile_glcm_cv;tile_glcm_patchiness,,2+3
+overlap,RUB-72501818,82,1,0.963415,1.000000,0.963415,0.981366,0.000000,1.000000,8,coverage;otsu_separability;saturation_score;lbp_entropy;glcm_contrast;edge_density_unmasked;tile_glcm_cv;tile_glcm_patchiness,,2+3
